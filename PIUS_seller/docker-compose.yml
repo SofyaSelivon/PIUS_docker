@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: back_seller/Dockerfile
+    container_name: pius_backend
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./back_seller:/app
+    env_file:
+      - ./back_seller/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:pass@postgres:5432/marketplace_db
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: .
+      dockerfile: seller-frontend/Dockerfile
+    container_name: pius_frontend
+    ports:
+      - "5172:5172"
+    volumes:
+      - ./seller-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16
+    container_name: pius_db
+    restart: always
+    environment:
+      POSTGRES_DB: marketplace_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
