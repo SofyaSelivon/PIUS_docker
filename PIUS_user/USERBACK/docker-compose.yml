@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./general-login-front
+    container_name: user_service_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./general-login-front:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+  api:
+    build: .
+    container_name: user_service_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./logreg:/app/logreg
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+    command: >
+      sh -c "sleep 10 && alembic upgrade head &&
+             python src/app/main.py"
+
+  api-tests:
+    build: .
+    container_name: app_tests
+    environment:
+      - DATABASE_URL=${TEST_DATABASE_URL}
+      - SELLER_SERVICE_URL=${SELLER_SERVICE_URL}
+    depends_on:
+      - postgres
+    command: pytest tests/ --cov=src --cov-report=term-missing
+    profiles:
+      - testing
+
+
+  postgres:
+    image: postgres:16
+    container_name: user_service_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+volumes:
+  postgres_data:
