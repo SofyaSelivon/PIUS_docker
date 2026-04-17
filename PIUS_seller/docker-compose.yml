@@ -14,6 +14,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:pass@postgres:5432/marketplace_db
     depends_on:
       - postgres
+    networks:
+      - shared_net
 
   frontend:
     build:
@@ -27,10 +29,13 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+    networks:
+      - shared_net
 
   postgres:
     image: postgres:16
     container_name: pius_db
+    hostname: seller-postgres
     restart: always
     environment:
       POSTGRES_DB: marketplace_db
@@ -40,6 +45,12 @@ services:
       - "5434:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - shared_net
 
 volumes:
   pg_data:
+
+networks:
+  shared_net:
+    name: pius_global_network

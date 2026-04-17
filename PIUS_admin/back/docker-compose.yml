@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  admin_api:
+    build: .
+    container_name: admin_service_api
+    ports:
+      - "8004:8004"
+    environment:
+      - USER_SERVICE_URL=http://user_service_api:8000
+    networks:
+      - shared_net
+
+networks:
+  shared_net:
+    name: pius_global_network
+    external: true
