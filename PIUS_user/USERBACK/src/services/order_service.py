@@ -40,7 +40,7 @@ class OrderService:
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                    f"{SELLER_SERVICE_URL}/internal/products/reserve",
+                    f"{SELLER_SERVICE_URL}/products/reserve",
                     json={"items": items_to_reserve},
                 )
 
@@ -56,6 +56,34 @@ class OrderService:
                 raise HTTPException(
                     status_code=503,
                     detail="Сервис товаров недоступен для резервирования",
+                )
+
+    async def create_order_in_seller(
+        self,
+        user_id: UUID,
+        delivery_address: str,
+        markets_data: dict,
+    ):
+        async with httpx.AsyncClient() as client:
+            try:
+                for market_id, data in markets_data.items():
+                    response = await client.post(
+                        f"{SELLER_SERVICE_URL}/products/orders",
+                        json={
+                            "marketId": str(market_id),
+                            "userId": str(user_id),
+                            "deliveryAddress": delivery_address,
+                            "totalAmount": data["total"],
+                            "items": data["items"],
+                        },
+                    )
+
+                    response.raise_for_status()
+
+            except httpx.RequestError:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Ошибка создания заказа в seller-сервисе",
                 )
 
     async def create_order_service(
@@ -93,11 +121,17 @@ class OrderService:
             price = float(product_data["price"])
             item_price_total = price * cart_item.quantity
             total_order_price += item_price_total
-            market_id = product_data["marketId"]
+
+            market_id = UUID(product_data["marketId"])
 
             markets_data[market_id]["total"] += item_price_total
+
             markets_data[market_id]["items"].append(
-                {"product_id": id_str, "quantity": cart_item.quantity, "price": price}
+                {
+                    "productId": id_str,
+                    "quantity": cart_item.quantity,
+                    "price": price,
+                }
             )
 
             items_for_reservation.append(
@@ -105,6 +139,12 @@ class OrderService:
             )
 
         await self.reserve_products_at_seller(items_to_reserve=items_for_reservation)
+
+        await self.create_order_in_seller(
+            user_id=user_id,
+            delivery_address=order_data.deliveryAddress,
+            markets_data=markets_data,
+        )
 
         order_id = await self.order_repository.create_order_from_cart(
             user_id=user_id,

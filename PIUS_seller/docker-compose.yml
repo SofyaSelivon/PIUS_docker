@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   backend:
     build:
@@ -10,12 +12,23 @@ services:
       - ./back_seller:/app
     env_file:
       - ./back_seller/.env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:pass@postgres:5432/marketplace_db
     depends_on:
-      - postgres
+      - seller_postgres
     networks:
       - shared_net
+    command: >
+      sh -c "
+      echo 'Waiting for Postgres...' &&
+      until pg_isready -h seller_postgres -U postgres; do
+        sleep 2;
+      done;
+
+      echo 'Running migrations...' &&
+      alembic upgrade head &&
+
+      echo 'Starting backend...' &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8002
+      "
 
   frontend:
     build:
@@ -32,10 +45,10 @@ services:
     networks:
       - shared_net
 
-  postgres:
+  seller_postgres:
     image: postgres:16
     container_name: pius_db
-    hostname: seller-postgres
+    hostname: seller_postgres
     restart: always
     environment:
       POSTGRES_DB: marketplace_db

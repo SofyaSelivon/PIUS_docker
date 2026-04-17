@@ -5,6 +5,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
+    postgresql-client \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 COPY back_seller/requirements.txt .
@@ -18,4 +20,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 EXPOSE 8002
 
-CMD ["python", "run.py"]
+CMD ["sh"]

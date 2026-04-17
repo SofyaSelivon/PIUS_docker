@@ -26,5 +26,5 @@ class User(Base):
         sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
-    cart = relationship("Cart", back_populates="user", uselist=False)  # 1k1
+    cart = relationship("Cart", back_populates="user", uselist=False)
     orders = relationship("Order", back_populates="user", lazy="selectin")

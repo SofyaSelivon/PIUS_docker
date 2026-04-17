@@ -31,74 +31,69 @@ class ProductsByIdsRequest(BaseModel):
     "/",
     response_model=AddToCartResponseSchema,
     status_code=status.HTTP_201_CREATED,
-    description="Добавление товара в корзину юзера",
 )
 async def add_to_cart(
     data: AddToCartRequestSchema,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
 ):
-
     return await cart_service.add_to_cart_service(
-        user_id=current_user.userId, data=data
+        user_id=current_user.userId,
+        data=data,
     )
 
 
 @router.get(
     "/",
     response_model=CartResponseSchema,
-    description="Возвращение содержимого корзины юзера",
 )
 async def get_cart(
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
 ):
+    return await cart_service.get_cart_service(
+        user_id=current_user.userId,
+    )
 
-    return await cart_service.get_cart_service(user_id=current_user.userId)
 
-
-@router.patch(
-    "/{product_id}",
-    response_model=UpdateCartItemResponseSchema,
-    description="Изменение количества указанного товара в корзине",
-)
+@router.patch("/{product_id}")
 async def update_cart_item(
+    product_id: UUID,
     data: UpdateCartItemRequestSchema,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
 ):
+    data.productId = product_id
 
     return await cart_service.update_cart_item_service(
-        user_id=current_user.userId, data=data
+        user_id=current_user.userId,
+        data=data
     )
 
 
 @router.delete(
     "/item/{product_id}",
     response_model=DeleteCartItemResponseSchema,
-    description="Удаляние товара из корзины юзера",
 )
 async def delete_cart_item(
     product_id: UUID,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
 ):
-
     return await cart_service.delete_cart_item_service(
-        user_id=current_user.userId, product_id=product_id
+        user_id=current_user.userId,
+        product_id=product_id,
     )
 
 
 @router.post(
     "/products/by-ids",
-    description="Получение информации о товарах (через cart-service)",
 )
 async def get_products_by_ids_via_cart(
     data: ProductsByIdsRequest,
     cart_service: CartService = Depends(get_cart_service),
 ):
     products = await cart_service.get_products_from_seller(data.productIds)
-
     return list(products.values())
 
 
@@ -128,10 +123,11 @@ async def get_products_via_cart(
     if available is not None:
         params["available"] = available
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{SELLER_SERVICE_URL}/products/",
-            params=params,
-        )
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        url = f"{SELLER_SERVICE_URL}/products/"
+
+        response = await client.get(url, params=params)
+
         response.raise_for_status()
+
         return response.json()

@@ -7,9 +7,10 @@ from app.models.user import User
 
 
 async def get_orders_with_stats(
+        
     db: AsyncSession, market_id, status=None, page: int = 1, limit: int = 10
 ):
-
+    print("DEBUG MARKET_ID:", market_id)
     query = (
         select(
             Order,

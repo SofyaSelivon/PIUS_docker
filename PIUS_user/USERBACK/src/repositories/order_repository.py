@@ -51,13 +51,17 @@ class OrderRepository:
                 order_item = OrderItems(
                     orderId=new_order.orderId,
                     orderMarketId=order_market.id,
-                    productId=item["product_id"],
+                    productId=item["productId"],
                     quantity=item["quantity"],
                     priceAtPurchase=item["price"],
                 )
                 self.session.add(order_item)
 
-        await self.session.execute(delete(CartItems).where(CartItems.cartId == cart_id))
+        await self.session.execute(
+            delete(CartItems).where(CartItems.cartId == cart_id)
+        )
+
+        await self.session.commit()
 
         return new_order.orderId
 

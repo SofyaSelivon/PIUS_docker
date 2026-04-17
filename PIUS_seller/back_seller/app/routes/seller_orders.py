@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from uuid import UUID
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +17,21 @@ from app.security.jwt_dependency import get_current_user
 
 router = APIRouter(prefix="/api/v1/seller/orders", tags=["seller"])
 
+class InternalOrderItem(BaseModel):
+    productId: UUID
+    quantity: int
+    price: float
+
+
+class InternalCreateOrderRequest(BaseModel):
+    orderId: UUID
+    marketId: UUID
+    userId: UUID
+    orderNumber: str
+    deliveryAddress: str
+    totalAmount: float
+    status: str
+    items: List[InternalOrderItem]
 
 @router.get("", response_model=PaginatedOrdersOut)
 async def list_orders(
@@ -24,8 +41,13 @@ async def list_orders(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    user_id = current_user.get("userId") if isinstance(current_user, dict) else getattr(current_user, "userId", None)
+
+    if not user_id:
+        raise HTTPException(401, "Invalid user")
+
     result = await db.execute(
-        select(Market.marketId).where(Market.userId == current_user["userId"])
+        select(Market.marketId).where(Market.userId == user_id)
     )
     market_id = result.scalar()
 
@@ -39,7 +61,12 @@ async def list_orders(
                 "pendingOrders": 0,
             },
             "orders": [],
-            "pagination": {"page": page, "limit": limit, "totalItems": 0, "totalPages": 0},
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "totalItems": 0,
+                "totalPages": 0,
+            },
         }
 
     return await crud_order.get_orders_with_stats(db, market_id, status, page, limit)
@@ -59,10 +86,13 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
 
     result = await db.execute(
         select(
-            func.date(Order.createdAt).label("date"), func.sum(Order.totalAmount).label("revenue")
+            func.date(Order.createdAt).label("date"),
+            func.sum(Order.totalAmount).label("revenue")
         )
         .where(
-            Order.marketId == market_id, Order.deletedAt.is_(None), Order.createdAt >= start_date
+            Order.marketId == market_id,
+            Order.deletedAt.is_(None),
+            Order.createdAt >= start_date
         )
         .group_by(func.date(Order.createdAt))
         .order_by(func.date(Order.createdAt))
@@ -74,9 +104,7 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
 
 
 @router.get("/revenue/total")
-async def get_total_revenue(
-    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+async def get_total_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -87,7 +115,8 @@ async def get_total_revenue(
 
     result = await db.execute(
         select(func.sum(Order.totalAmount)).where(
-            Order.marketId == market_id, Order.deletedAt.is_(None)
+            Order.marketId == market_id,
+            Order.deletedAt.is_(None)
         )
     )
 
@@ -97,9 +126,7 @@ async def get_total_revenue(
 
 
 @router.get("/completed")
-async def get_completed_orders(
-    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+async def get_completed_orders(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -138,7 +165,9 @@ async def update_status(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
+            Order.id == order_id,
+            Order.marketId == market_id,
+            Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -175,7 +204,9 @@ async def delete_order(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
+            Order.id == order_id,
+            Order.marketId == market_id,
+            Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -201,7 +232,9 @@ async def get_order_by_id(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
+            Order.id == order_id,
+            Order.marketId == market_id,
+            Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -220,7 +253,51 @@ async def get_order_by_id(
         "status": order.status,
         "createdAt": order.createdAt,
         "items": [
-            {"productId": item.productId, "quantity": item.quantity, "price": float(item.price)}
+            {
+                "productId": item.productId,
+                "quantity": item.quantity,
+                "price": float(item.price),
+            }
             for item in items
         ],
     }
+
+@router.post("/internal/sync")
+async def sync_order_to_seller(
+    data: InternalCreateOrderRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Order).where(Order.id == data.orderId)
+    )
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        return {"success": True, "message": "already exists"}
+
+    order = Order(
+        id=data.orderId,
+        marketId=data.marketId,
+        userId=data.userId,
+        orderNumber=data.orderNumber,
+        deliveryAddress=data.deliveryAddress,
+        totalAmount=data.totalAmount,
+        status=OrderStatus(data.status),
+    )
+
+    db.add(order)
+    await db.flush()
+
+    for item in data.items:
+        db.add(
+            OrderItem(
+                orderId=order.id,
+                productId=item.productId,
+                quantity=item.quantity,
+                price=item.price,
+            )
+        )
+
+    await db.commit()
+
+    return {"success": True}
