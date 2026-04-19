@@ -1,13 +1,36 @@
-version: '3.8'
+version: "3.9"
 
 services:
   admin_api:
     build: .
     container_name: admin_service_api
+    restart: always
     ports:
       - "8004:8004"
+    volumes:
+      - ./src:/app/src
     environment:
-      - USER_SERVICE_URL=http://user_service_api:8000
+      USER_SERVICE_URL: http://user_service_api:8000
+      PYTHONUNBUFFERED: 1
+    networks:
+      - shared_net
+    command: >
+      sh -c "uvicorn src.main:app --host 0.0.0.0 --port 8004 --reload"
+
+  admin_frontend:
+    build:
+      context: ../admin-frontend
+    container_name: admin_frontend
+    ports:
+      - "5175:5173"
+    volumes:
+      - ../admin-frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    command: yarn dev --host 0.0.0.0 --port 5173
+    depends_on:
+      - admin_api
     networks:
       - shared_net
 
