@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Box } from "@mui/material";
 import styles from "./MainLayout.module.css";
 import { Header } from "../../widgets/header/ui/Header";
@@ -10,7 +10,19 @@ interface Props {
 }
 
 export const MainLayout = ({ children }: Props) => {
-  const { data: user, isLoading, isError } = useGetMeQuery();
+  const [shouldFetch, setShouldFetch] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldFetch(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const { data: user, isLoading, isError } = useGetMeQuery(undefined, {
+    skip: !shouldFetch,
+  });
 
   const userName = user?.firstName ?? "";
   const cartCount = user?.cartCount ?? 0;

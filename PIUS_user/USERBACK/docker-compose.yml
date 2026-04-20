@@ -60,7 +60,8 @@ services:
     command: pytest tests/ --cov=src --cov-report=term-missing
     profiles:
       - testing
-
+    networks:
+      - shared_net
 
   frontend-auth:
     build:
