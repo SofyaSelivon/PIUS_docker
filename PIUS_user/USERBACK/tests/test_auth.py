@@ -3,7 +3,6 @@ import asyncio
 from src.app.config import settings
 
 TEST_USER = settings.TEST_USER
-#проверка тестов
 
 async def test_register_success(client):
     response = await client.post("/api/v1/auth/register", json=TEST_USER)
