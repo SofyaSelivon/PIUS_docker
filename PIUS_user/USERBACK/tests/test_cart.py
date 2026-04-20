@@ -6,10 +6,13 @@ from httpx import Response
 
 from src.app.config import settings
 
+
 TEST_USER = settings.TEST_USER
 TEST_PRODUCT_ID = str(uuid4())
 TEST_MARKET_ID = str(uuid4())
 SELLER_SERVICE_URL = settings.SELLER_SERVICE_URL
+
+
 MOCK_SELLER_PRODUCTS: list = [
     {
         "id": TEST_PRODUCT_ID,
@@ -31,10 +34,26 @@ MOCK_SELLER_RESPONSE = [
     }
 ]
 
+def mock_seller(respx_mock, response_data):
+    respx_mock.post(f"{SELLER_SERVICE_URL}/products/by-ids").mock(
+        return_value=Response(200, json=response_data)
+    )
+
+    respx_mock.post(
+        "http://pius_backend:8002/api/v1/internal/products/info"
+    ).mock(
+        return_value=Response(200, json=response_data)
+    )
 
 @respx.mock
 async def test_seller_service_unavailable(client, auth_token):
     respx.post(f"{SELLER_SERVICE_URL}/products/by-ids").mock(
+        side_effect=httpx.ConnectError("Connection refused")
+    )
+
+    respx.post(
+        "http://pius_backend:8002/api/v1/internal/products/info"
+    ).mock(
         side_effect=httpx.ConnectError("Connection refused")
     )
 
@@ -50,9 +69,7 @@ async def test_seller_service_unavailable(client, auth_token):
 
 @respx.mock
 async def test_add_to_cart_success(client, auth_token):
-    respx.post(f"{SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     response = await client.post(
         "/api/v1/cart/",
@@ -68,9 +85,7 @@ async def test_add_to_cart_success(client, auth_token):
 
 @respx.mock
 async def test_update_cart_item_quantity(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").respond(
-        200, json=MOCK_SELLER_PRODUCTS
-    )
+    mock_seller(respx, MOCK_SELLER_PRODUCTS)
 
     await client.post(
         "/api/v1/cart/",
@@ -92,24 +107,20 @@ async def test_update_cart_item_quantity(client, auth_token):
 
 @respx.mock
 async def test_add_to_cart_first_time(client, auth_token):
-    route = respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids")
-    route.respond(200, json=MOCK_SELLER_PRODUCTS)
-
-    respx.route(url__startswith=settings.SELLER_SERVICE_URL).pass_through = False
+    mock_seller(respx, MOCK_SELLER_PRODUCTS)
 
     response = await client.post(
         "/api/v1/cart/",
         headers={"Authorization": f"Bearer {auth_token}"},
         json={"productId": TEST_PRODUCT_ID, "quantity": 1},
     )
+
     assert response.status_code == 201
 
 
 @respx.mock
 async def test_add_to_cart_product_not_found(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=[])
-    )
+    mock_seller(respx, [])
 
     response = await client.post(
         "/api/v1/cart/",
@@ -122,9 +133,7 @@ async def test_add_to_cart_product_not_found(client, auth_token):
 
 @respx.mock
 async def test_add_to_cart_not_enough_stock(client, auth_token):
-    respx.post(f"{SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     response = await client.post(
         "/api/v1/cart/",
@@ -148,9 +157,7 @@ async def test_add_to_cart_validation_error(client, auth_token):
 
 @respx.mock
 async def test_get_cart_success(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     await client.post(
         "/api/v1/cart/",
@@ -159,7 +166,8 @@ async def test_get_cart_success(client, auth_token):
     )
 
     response = await client.get(
-        "/api/v1/cart/", headers={"Authorization": f"Bearer {auth_token}"}
+        "/api/v1/cart/",
+        headers={"Authorization": f"Bearer {auth_token}"}
     )
 
     assert response.status_code == 200
@@ -178,8 +186,10 @@ async def test_get_cart_unauthorized(client):
 
 async def test_get_cart_empty(client, auth_token):
     response = await client.get(
-        "/api/v1/cart/", headers={"Authorization": f"Bearer {auth_token}"}
+        "/api/v1/cart/",
+        headers={"Authorization": f"Bearer {auth_token}"}
     )
+
     assert response.status_code == 200
     data = response.json()
     assert data["items"] == []
@@ -188,9 +198,7 @@ async def test_get_cart_empty(client, auth_token):
 
 @respx.mock
 async def test_update_cart_item(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     await client.post(
         "/api/v1/cart/",
@@ -213,9 +221,7 @@ async def test_update_cart_item(client, auth_token):
 
 @respx.mock
 async def test_update_cart_item_not_found(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=[])
-    )
+    mock_seller(respx, [])
 
     response = await client.patch(
         f"/api/v1/cart/{TEST_PRODUCT_ID}",
@@ -228,9 +234,7 @@ async def test_update_cart_item_not_found(client, auth_token):
 
 @respx.mock
 async def test_update_cart_item_not_enough_stock(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     response = await client.patch(
         f"/api/v1/cart/{TEST_PRODUCT_ID}",
@@ -244,9 +248,7 @@ async def test_update_cart_item_not_enough_stock(client, auth_token):
 
 @respx.mock
 async def test_delete_cart_item(client, auth_token):
-    respx.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
-        return_value=Response(200, json=MOCK_SELLER_RESPONSE)
-    )
+    mock_seller(respx, MOCK_SELLER_RESPONSE)
 
     await client.post(
         "/api/v1/cart/",
