@@ -50,7 +50,7 @@
 
 ---
 
-# 🛠 ADMIN Service
+# ADMIN Service
 
 ## Назначение
 
@@ -62,11 +62,11 @@
 
 ### Возможности
 
-- будаление и редактирование пользователей
+- удаление и редактирование пользователей
 
 ---
 
-# 🔐 AUTH Service (Login / Registration)
+# AUTH Service (Login / Registration)
 
 ## Назначение
 
@@ -86,7 +86,7 @@
 
 ---
 
-# 🧩 Архитектура и зависимости
+# Архитектура и зависимости
 
 ## Общая архитектура
 
@@ -193,11 +193,14 @@ alembic upgrade head
 uvicorn src.app.application:get_app --factory --reload --host 0.0.0.0 --port 8004
 ```
 
+---
 
 # API Документация
 - USER	http://localhost:8001/#docs
 - SELLER	http://localhost:8002/#docs
 - ADMIN	http://localhost:8004/#docs
+
+---
 
 # Тестирование
 #### Backend
