@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 from uuid import UUID
 
@@ -86,7 +86,7 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
     if not market_id:
         return []
 
-    start_date = datetime.now(datetime.UTC) - timedelta(days=7)
+    start_date = datetime.now(timezone.utc) - timedelta(days=7)
 
     result = await db.execute(
         select(
