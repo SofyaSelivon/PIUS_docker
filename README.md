@@ -195,9 +195,9 @@ uvicorn src.app.application:get_app --factory --reload --host 0.0.0.0 --port 800
 
 
 # API Документация
-USER	http://localhost:8001/#docs
-SELLER	http://localhost:8002/#docs
-ADMIN	http://localhost:8004/#docs
+- USER	http://localhost:8001/#docs
+- SELLER	http://localhost:8002/#docs
+- ADMIN	http://localhost:8004/#docs
 
 # Тестирование
 #### Backend
@@ -210,8 +210,7 @@ yarn test
 ```
 
 # Контакты и поддержка
-Авторы: Новиков П.А., Виницкий Е.Р., Селивон С.И. | ПИН-36
-GitHub Новикова П.А.: https://github.com/Psinavkvadrate
-GitHub Виницкого Е.Р.: https://github.com/withFaithinFuture
-GitHub Селивон С.И.: https://github.com/SofyaSelivon
-Telegram: @psina_v_kvadrate
+- Авторы: Новиков П.А., Виницкий Е.Р., Селивон С.И. | ПИН-36
+- GitHub Новикова П.А.: https://github.com/Psinavkvadrate
+- GitHub Виницкого Е.Р.: https://github.com/withFaithinFuture
+- GitHub Селивон С.И.: https://github.com/SofyaSelivon
