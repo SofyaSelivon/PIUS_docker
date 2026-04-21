@@ -119,7 +119,7 @@ async def test_get_my_market_success():
     assert res == market
     db.execute.assert_awaited_once()
 
-    log.info("✔ market fetched")
+    log.info("market fetched")
 
 
 @pytest.mark.asyncio
