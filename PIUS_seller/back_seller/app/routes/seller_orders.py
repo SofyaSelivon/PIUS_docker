@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from uuid import UUID
 from typing import List
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ from app.schemas.order import OrderStatusUpdate, PaginatedOrdersOut, SuccessResp
 from app.security.jwt_dependency import get_current_user
 
 router = APIRouter(prefix="/api/v1/seller/orders", tags=["seller"])
+
 
 class InternalOrderItem(BaseModel):
     productId: UUID
@@ -33,6 +34,7 @@ class InternalCreateOrderRequest(BaseModel):
     status: str
     items: List[InternalOrderItem]
 
+
 @router.get("", response_model=PaginatedOrdersOut)
 async def list_orders(
     page: int = Query(1),
@@ -41,14 +43,16 @@ async def list_orders(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    user_id = current_user.get("userId") if isinstance(current_user, dict) else getattr(current_user, "userId", None)
+    user_id = (
+        current_user.get("userId")
+        if isinstance(current_user, dict)
+        else getattr(current_user, "userId", None)
+    )
 
     if not user_id:
         raise HTTPException(401, "Invalid user")
 
-    result = await db.execute(
-        select(Market.marketId).where(Market.userId == user_id)
-    )
+    result = await db.execute(select(Market.marketId).where(Market.userId == user_id))
     market_id = result.scalar()
 
     if not market_id:
@@ -82,17 +86,14 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
     if not market_id:
         return []
 
-    start_date = datetime.utcnow() - timedelta(days=7)
+    start_date = datetime.now(datetime.UTC) - timedelta(days=7)
 
     result = await db.execute(
         select(
-            func.date(Order.createdAt).label("date"),
-            func.sum(Order.totalAmount).label("revenue")
+            func.date(Order.createdAt).label("date"), func.sum(Order.totalAmount).label("revenue")
         )
         .where(
-            Order.marketId == market_id,
-            Order.deletedAt.is_(None),
-            Order.createdAt >= start_date
+            Order.marketId == market_id, Order.deletedAt.is_(None), Order.createdAt >= start_date
         )
         .group_by(func.date(Order.createdAt))
         .order_by(func.date(Order.createdAt))
@@ -104,7 +105,9 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
 
 
 @router.get("/revenue/total")
-async def get_total_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_total_revenue(
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+):
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -115,8 +118,7 @@ async def get_total_revenue(db: AsyncSession = Depends(get_db), current_user=Dep
 
     result = await db.execute(
         select(func.sum(Order.totalAmount)).where(
-            Order.marketId == market_id,
-            Order.deletedAt.is_(None)
+            Order.marketId == market_id, Order.deletedAt.is_(None)
         )
     )
 
@@ -126,7 +128,9 @@ async def get_total_revenue(db: AsyncSession = Depends(get_db), current_user=Dep
 
 
 @router.get("/completed")
-async def get_completed_orders(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_completed_orders(
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+):
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -165,9 +169,7 @@ async def update_status(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id,
-            Order.marketId == market_id,
-            Order.deletedAt.is_(None)
+            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -204,9 +206,7 @@ async def delete_order(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id,
-            Order.marketId == market_id,
-            Order.deletedAt.is_(None)
+            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -232,9 +232,7 @@ async def get_order_by_id(
 
     result = await db.execute(
         select(Order).where(
-            Order.id == order_id,
-            Order.marketId == market_id,
-            Order.deletedAt.is_(None)
+            Order.id == order_id, Order.marketId == market_id, Order.deletedAt.is_(None)
         )
     )
     order = result.scalar()
@@ -262,14 +260,13 @@ async def get_order_by_id(
         ],
     }
 
+
 @router.post("/internal/sync")
 async def sync_order_to_seller(
     data: InternalCreateOrderRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Order).where(Order.id == data.orderId)
-    )
+    result = await db.execute(select(Order).where(Order.id == data.orderId))
     existing = result.scalar_one_or_none()
 
     if existing:
