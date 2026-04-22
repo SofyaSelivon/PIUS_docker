@@ -1,4 +1,4 @@
-from typing import List, Optional, TypeDict
+from typing import List, Optional, TypedDict
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -11,11 +11,11 @@ from app.models.product import Product
 from app.schemas.product_schema import ProductCreate, ProductUpdate
 
 
-class Pagination(TypeDict):
+class Pagination(TypedDict):
     total: int
 
 
-class ProductResponse(TypeDict):
+class ProductResponse(TypedDict):
     items: List[Product]
     pagination: Pagination
 
