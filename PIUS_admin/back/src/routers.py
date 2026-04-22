@@ -2,6 +2,8 @@ from uuid import UUID
 from fastapi import APIRouter
 from src.client import UserClient
 from src.schemas import UserUpdateRequest
+from src.security import get_admin_user
+
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users Admin Proxy"])
 client = UserClient()
