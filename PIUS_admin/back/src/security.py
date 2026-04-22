@@ -14,17 +14,16 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 async def get_admin_user(token: str = Depends(oauth2_scheme)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id: str = payload.get('sun')
-        is_admin: bool = payload.get('is_admin', False)
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        is_admin: bool = payload.get("is_admin", False)
 
-        if user_id is None:
+        if not user_id:
             raise HTTPException(status_code=401, detail="Неверный токен")
-
         if not is_admin:
-            raise HTTPException(status_code=403, detail="Доступ разрешен только для админов")
-
-        return {"userId": user_id, "isAdmin": True}
-
-    except JWTError:
+            raise HTTPException(status_code=403, detail="Только для админов.")
+            
+        return {"userId": user_id, "isAdmin": True, "token": token} 
+        
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Токен истек или невалиден")
