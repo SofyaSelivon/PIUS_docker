@@ -10,13 +10,6 @@ from src.routers.admin_routers import router as admin_router
 
 
 def get_app() -> FastAPI:
-    """
-    Get FastAPI application.
-
-    This is the main constructor of an application.
-
-    :return: application.
-    """
     app = FastAPI(
         docs_url="/docs",
         openapi_url="/openapi.json",

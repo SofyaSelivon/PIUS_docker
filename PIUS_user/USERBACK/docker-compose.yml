@@ -27,6 +27,10 @@ services:
   api:
     build: .
     container_name: user_service_api
+    deploy:
+      resources:
+        limits:
+          memory: 5120M
     restart: always
     ports:
       - "8000:8000"
