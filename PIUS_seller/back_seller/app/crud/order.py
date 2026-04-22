@@ -1,3 +1,6 @@
+from typing import Any, Dict, List, Optional, TypedDict
+from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,10 +9,27 @@ from app.models.order_item import OrderItem
 from app.models.user import User
 
 
+class Pagination(TypedDict):
+    total: int
+
+
+class Statistics(TypedDict):
+    totalOrders: int
+    totalRevenue: float
+    completedOrders: int
+    processingOrders: int
+    pendingOrders: int
+
+
+class OrdersResponse(TypedDict):
+    orders: List[Dict[str, Any]]
+    statistics: Statistics
+    pagination: Pagination
+
+
 async def get_orders_with_stats(
-        
-    db: AsyncSession, market_id, status=None, page: int = 1, limit: int = 10
-):
+    db: AsyncSession, market_id: UUID, status: Optional[str] = None, page: int = 1, limit: int = 10
+) -> OrdersResponse:
     print("DEBUG MARKET_ID:", market_id)
     query = (
         select(
@@ -113,13 +133,13 @@ async def get_orders_with_stats(
     }
 
 
-async def update_order_status(db: AsyncSession, order: Order, new_status: OrderStatus):
+async def update_order_status(db: AsyncSession, order: Order, new_status: OrderStatus) -> bool:
     order.status = new_status
     await db.commit()
     return True
 
 
-async def soft_delete_order(db: AsyncSession, order: Order):
+async def soft_delete_order(db: AsyncSession, order: Order) -> bool:
     order.deletedAt = func.now()
     await db.commit()
     return True

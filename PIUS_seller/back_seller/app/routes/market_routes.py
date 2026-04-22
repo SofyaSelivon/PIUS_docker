@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ from app.security.jwt_dependency import get_current_user
 router = APIRouter(prefix="/api/v1/markets", tags=["markets"])
 
 
-async def ensure_user_exists(db: AsyncSession, user_id):
+async def ensure_user_exists(db: AsyncSession, user_id: str) -> User:
     user = await db.get(User, user_id)
 
     if not user:
@@ -43,7 +44,9 @@ async def ensure_user_exists(db: AsyncSession, user_id):
 
 @router.post("/create")
 async def create_market_route(
-    data: MarketCreate, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)
+    data: MarketCreate,
+    db: AsyncSession = Depends(get_db),
+    user: Dict[str, Any] = Depends(get_current_user),
 ):
     await ensure_user_exists(db, user["userId"])
 
@@ -56,7 +59,9 @@ async def create_market_route(
 
 
 @router.get("/my")
-async def my_market(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+async def my_market(
+    db: AsyncSession = Depends(get_db), user: Dict[str, Any] = Depends(get_current_user)
+):
     market = await get_my_market(db, user["userId"])
 
     if not market:
@@ -67,7 +72,9 @@ async def my_market(db: AsyncSession = Depends(get_db), user=Depends(get_current
 
 @router.patch("/my")
 async def update_my_market(
-    data: MarketUpdate, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)
+    data: MarketUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: Dict[str, Any] = Depends(get_current_user),
 ):
     await update_market(db, user["userId"], data)
 

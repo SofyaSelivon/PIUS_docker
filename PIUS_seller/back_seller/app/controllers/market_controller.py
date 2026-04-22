@@ -1,13 +1,15 @@
 import uuid
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.market import Market
+from app.schemas.market_schema import MarketCreate, MarketUpdate
 
 
-async def create_market(db: AsyncSession, user_id: str, data):
+async def create_market(db: AsyncSession, user_id: str, data: MarketCreate) -> Market:
     market = Market(
         marketId=str(uuid.uuid4()),
         userId=user_id,
@@ -22,7 +24,7 @@ async def create_market(db: AsyncSession, user_id: str, data):
     return market
 
 
-async def get_my_market(db: AsyncSession, user_id):
+async def get_my_market(db: AsyncSession, user_id: str) -> Market:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     market = result.scalars().first()
 
@@ -32,7 +34,7 @@ async def get_my_market(db: AsyncSession, user_id):
     return market
 
 
-async def update_market(db: AsyncSession, user_id, data):
+async def update_market(db: AsyncSession, user_id: str, data: MarketUpdate) -> Market:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     market = result.scalars().first()
 
@@ -51,6 +53,6 @@ async def update_market(db: AsyncSession, user_id, data):
     return market
 
 
-async def market_exists(db: AsyncSession, user_id: str):
+async def market_exists(db: AsyncSession, user_id: str) -> Optional[Market]:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     return result.scalar_one_or_none()

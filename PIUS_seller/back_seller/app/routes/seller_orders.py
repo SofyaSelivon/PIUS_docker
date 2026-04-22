@@ -77,7 +77,9 @@ async def list_orders(
 
 
 @router.get("/revenue")
-async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_revenue(
+    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
+) -> list[dict]:
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -107,7 +109,7 @@ async def get_revenue(db: AsyncSession = Depends(get_db), current_user=Depends(g
 @router.get("/revenue/total")
 async def get_total_revenue(
     db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+) -> dict:
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -130,7 +132,7 @@ async def get_total_revenue(
 @router.get("/completed")
 async def get_completed_orders(
     db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
-):
+) -> dict:
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -158,7 +160,7 @@ async def update_status(
     status_update: OrderStatusUpdate = None,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
-):
+) -> SuccessResponse:
     if status_update is None:
         raise HTTPException(400, "Status body is required")
 
@@ -198,7 +200,7 @@ async def delete_order(
     order_id: UUID = Path(...),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
-):
+) -> SuccessResponse:
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -224,7 +226,7 @@ async def get_order_by_id(
     order_id: UUID = Path(...),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
-):
+) -> dict:
     result = await db.execute(
         select(Market.marketId).where(Market.userId == current_user["userId"])
     )
@@ -265,7 +267,7 @@ async def get_order_by_id(
 async def sync_order_to_seller(
     data: InternalCreateOrderRequest,
     db: AsyncSession = Depends(get_db),
-):
+) -> dict:
     result = await db.execute(select(Order).where(Order.id == data.orderId))
     existing = result.scalar_one_or_none()
 

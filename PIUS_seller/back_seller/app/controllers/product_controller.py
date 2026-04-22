@@ -1,15 +1,36 @@
+from typing import List, Optional, TypeDict
+from uuid import UUID
+
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enums.product_category import ProductCategory
 from app.models.market import Market
 from app.models.product import Product
+from app.schemas.product_schema import ProductCreate, ProductUpdate
+
+
+class Pagination(TypeDict):
+    total: int
+
+
+class ProductResponse(TypeDict):
+    items: List[Product]
+    pagination: Pagination
 
 
 async def get_my_products(
-    db: AsyncSession, user_id, page, limit, search, category, min_price, max_price, available
-):
-
+    db: AsyncSession,
+    user_id: str,
+    page: int,
+    limit: int,
+    search: Optional[str],
+    category: Optional[ProductCategory],
+    min_price: Optional[float],
+    max_price: Optional[float],
+    available: Optional[bool],
+) -> ProductResponse:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     market = result.scalars().first()
 
@@ -48,8 +69,7 @@ async def get_my_products(
     return {"items": products, "pagination": {"total": total_items}}
 
 
-async def create_product(db: AsyncSession, user_id, data):
-
+async def create_product(db: AsyncSession, user_id: str, data: ProductCreate) -> Product:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     market = result.scalars().first()
 
@@ -74,7 +94,7 @@ async def create_product(db: AsyncSession, user_id, data):
     return product
 
 
-async def get_product(db: AsyncSession, product_id, user_id):
+async def get_product(db: AsyncSession, product_id: UUID, user_id: str) -> Product:
     result = await db.execute(select(Market).where(Market.userId == user_id))
     market = result.scalars().first()
 
@@ -93,8 +113,9 @@ async def get_product(db: AsyncSession, product_id, user_id):
     return product
 
 
-async def update_product(db: AsyncSession, product_id, user_id, data):
-
+async def update_product(
+    db: AsyncSession, product_id: UUID, user_id: str, data: ProductUpdate
+) -> Product:
     product = await get_product(db, product_id, user_id)
 
     if data.name is not None:
@@ -112,8 +133,7 @@ async def update_product(db: AsyncSession, product_id, user_id, data):
     return product
 
 
-async def delete_product(db: AsyncSession, product_id, user_id):
-
+async def delete_product(db: AsyncSession, product_id: UUID, user_id: str):
     product = await get_product(db, product_id, user_id)
 
     if not product:
