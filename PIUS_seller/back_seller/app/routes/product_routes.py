@@ -15,7 +15,13 @@ from app.controllers.product_controller import (
 )
 from app.database.session import get_db
 from app.models.product import Product
-from app.schemas.product_schema import ProductCategory, ProductCreate, ProductUpdate
+from app.schemas.product_schema import (
+    ProductCategory,
+    ProductCreate,
+    ProductListResponse,
+    ProductResponse,
+    ProductUpdate,
+)
 from app.security.jwt_dependency import get_current_user
 
 router = APIRouter(prefix="/api/v1/products", tags=["products"])
@@ -25,7 +31,11 @@ class ProductsByIdsRequest(BaseModel):
     productIds: List[UUID]
 
 
-@router.post("/by-ids")
+@router.post(
+    "/by-ids",
+    response_model=list[ProductResponse],
+    summary="Get Products By IDs",
+)
 async def get_products_by_ids(
     data: ProductsByIdsRequest,
     db: AsyncSession = Depends(get_db),
@@ -49,7 +59,11 @@ async def get_products_by_ids(
     ]
 
 
-@router.get("/my")
+@router.get(
+    "/my",
+    response_model=ProductListResponse,
+    summary="My Products",
+)
 async def my_products(
     page: int = 1,
     limit: int = 12,
@@ -74,7 +88,11 @@ async def my_products(
     )
 
 
-@router.get("/")
+@router.get(
+    "/",
+    response_model=ProductListResponse,
+    summary="Get All Products",
+)
 async def get_all_products(
     page: int = 1,
     limit: int = 12,
@@ -138,7 +156,11 @@ async def get_all_products(
     }
 
 
-@router.post("/")
+@router.post(
+    "/",
+    response_model=dict,
+    summary="Create Product",
+)
 async def create(
     data: ProductCreate,
     db: AsyncSession = Depends(get_db),
@@ -149,7 +171,11 @@ async def create(
     return {"success": True, "productId": product.id}
 
 
-@router.get("/{product_id}")
+@router.get(
+    "/{product_id}",
+    response_model=ProductResponse,
+    summary="Get Product By ID",
+)
 async def get_product_by_id(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -160,7 +186,11 @@ async def get_product_by_id(
     return product
 
 
-@router.patch("/{product_id}")
+@router.patch(
+    "/{product_id}",
+    response_model=dict,
+    summary="Update Product",
+)
 async def update_product_by_id(
     product_id: UUID,
     data: ProductUpdate,
@@ -172,7 +202,11 @@ async def update_product_by_id(
     return {"success": True}
 
 
-@router.delete("/{product_id}")
+@router.delete(
+    "/{product_id}",
+    response_model=dict,
+    summary="Delete Product",
+)
 async def delete_product_by_id(
     product_id: UUID,
     db: AsyncSession = Depends(get_db),

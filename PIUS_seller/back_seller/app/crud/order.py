@@ -1,3 +1,4 @@
+import math
 from typing import Any, Dict, List, Optional, TypedDict
 from uuid import UUID
 
@@ -129,7 +130,12 @@ async def get_orders_with_stats(
             "processingOrders": processing_orders,
             "pendingOrders": pending_orders,
         },
-        "pagination": {"total": total_orders},
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "totalItems": total_orders,
+            "totalPages": math.ceil(total_orders / limit) if limit else 1,
+        },
     }
 
 

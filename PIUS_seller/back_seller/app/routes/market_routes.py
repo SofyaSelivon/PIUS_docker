@@ -12,7 +12,13 @@ from app.controllers.market_controller import (
 )
 from app.database.session import get_db
 from app.models.user import User
-from app.schemas.market_schema import MarketCreate, MarketUpdate
+from app.schemas.market_schema import (
+    ErrorResponse,
+    MarketCreate,
+    MarketResponse,
+    MarketUpdate,
+    SuccessResponse,
+)
 from app.security.jwt_dependency import get_current_user
 
 router = APIRouter(prefix="/api/v1/markets", tags=["markets"])
@@ -42,7 +48,17 @@ async def ensure_user_exists(db: AsyncSession, user_id: str) -> User:
     return user
 
 
-@router.post("/create")
+@router.post(
+    "/create",
+    response_model=MarketResponse,
+    summary="Create Market",
+    responses={
+        400: {
+            "model": ErrorResponse,
+            "description": "Market already exists",
+        }
+    },
+)
 async def create_market_route(
     data: MarketCreate,
     db: AsyncSession = Depends(get_db),
@@ -58,7 +74,17 @@ async def create_market_route(
     return market
 
 
-@router.get("/my")
+@router.get(
+    "/my",
+    response_model=MarketResponse,
+    summary="Get My Market",
+    responses={
+        404: {
+            "model": ErrorResponse,
+            "description": "Market not found",
+        }
+    },
+)
 async def my_market(
     db: AsyncSession = Depends(get_db), user: Dict[str, Any] = Depends(get_current_user)
 ):
@@ -70,7 +96,11 @@ async def my_market(
     return market
 
 
-@router.patch("/my")
+@router.patch(
+    "/my",
+    response_model=SuccessResponse,
+    summary="Update My Market",
+)
 async def update_my_market(
     data: MarketUpdate,
     db: AsyncSession = Depends(get_db),
