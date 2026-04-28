@@ -7,12 +7,6 @@ from sqlalchemy.pool import NullPool
 from alembic import context
 from app.database.base import Base
 
-from app.models.order import Order
-from app.models.order_item import OrderItem
-from app.models.product import Product
-from app.models.user import User
-from app.models.market import Market
-
 config = context.config
 
 if config.config_file_name is not None:

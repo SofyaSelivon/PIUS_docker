@@ -1,9 +1,8 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from src.db.base_service import Base
 
 
@@ -25,7 +24,7 @@ class User(Base):
         sa.Boolean, index=True, default=False, server_default=sa.text("false")
     )
     createdAt: Mapped[datetime] = mapped_column(
-        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(UTC)
     )
 
     cart = relationship("Cart", back_populates="user", uselist=False)

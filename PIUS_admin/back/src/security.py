@@ -1,18 +1,15 @@
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from dotenv import load_dotenv
-
 from src.config import settings
 
 load_dotenv()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="http://user_service_api:8000/api/v1/auth/login"
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://user_service_api:8000/api/v1/auth/login")
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -33,5 +30,8 @@ async def get_admin_user(token: str = Depends(oauth2_scheme)):
 
         return {"userId": user_id, "isAdmin": True, "token": token}
 
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Токен истек или невалиден")
+    except JWTError as err:
+        raise HTTPException(
+            status_code=401,
+            detail="Токен истек или невалиден",
+        ) from err

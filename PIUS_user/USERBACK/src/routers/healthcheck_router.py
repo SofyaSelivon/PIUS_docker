@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status
-
 from src.schemas.healtcheck_schemas import HealthCheckResponse
 
 router = APIRouter(prefix="/api/v1/cart", tags=["cart"])

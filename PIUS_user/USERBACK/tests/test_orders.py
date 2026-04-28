@@ -1,9 +1,9 @@
+from uuid import uuid4
+
 import httpx
 import pytest
 import respx
 from httpx import Response
-from uuid import uuid4
-
 from src.app.config import settings
 
 TEST_PRODUCT_ID = str(uuid4())
@@ -21,10 +21,10 @@ MOCK_SELLER_PRODUCTS = [
 
 ORDER_PAYLOAD = settings.ORDER_PAYLOAD
 
+
 @pytest.fixture
 def mock_seller():
     with respx.mock(assert_all_called=False) as mock:
-
         mock.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
             return_value=Response(200, json=MOCK_SELLER_PRODUCTS)
         )
@@ -75,9 +75,9 @@ async def test_create_order_success(client, auth_token, mock_seller):
 
 
 async def test_create_order_seller_503(client, auth_token, mock_seller):
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/by-ids"
-    ).mock(side_effect=httpx.ConnectError("Connection refused"))
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
+        side_effect=httpx.ConnectError("Connection refused")
+    )
 
     await client.post(
         "/api/v1/cart/",
@@ -96,9 +96,9 @@ async def test_create_order_seller_503(client, auth_token, mock_seller):
 
 
 async def test_create_order_reserve_failed(client, auth_token, mock_seller):
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/reserve"
-    ).mock(return_value=Response(400))
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/reserve").mock(
+        return_value=Response(400)
+    )
 
     await client.post(
         "/api/v1/cart/",
@@ -117,9 +117,9 @@ async def test_create_order_reserve_failed(client, auth_token, mock_seller):
 
 
 async def test_create_order_reserve_503(client, auth_token, mock_seller):
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/reserve"
-    ).mock(side_effect=httpx.RequestError("Network timeout"))
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/reserve").mock(
+        side_effect=httpx.RequestError("Network timeout")
+    )
 
     await client.post(
         "/api/v1/cart/",
@@ -138,9 +138,9 @@ async def test_create_order_reserve_503(client, auth_token, mock_seller):
 
 
 async def test_create_order_product_vanished(client, auth_token, mock_seller):
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/by-ids"
-    ).mock(return_value=Response(200, json=[]))
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
+        return_value=Response(200, json=[])
+    )
 
     await client.post(
         "/api/v1/cart/",
@@ -159,9 +159,7 @@ async def test_create_order_product_vanished(client, auth_token, mock_seller):
 
 
 async def test_create_order_not_enough_stock_at_checkout(client, auth_token, mock_seller):
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/by-ids"
-    ).mock(
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
         return_value=Response(
             200,
             json=[{**MOCK_SELLER_PRODUCTS[0], "available": 0}],
@@ -263,9 +261,9 @@ async def test_get_order_details_seller_503(client, auth_token, mock_seller):
 
     order_id = order_resp.json()["orderId"]
 
-    mock_seller.post(
-        f"{settings.SELLER_SERVICE_URL}/products/by-ids"
-    ).mock(side_effect=httpx.ConnectError("Connection refused"))
+    mock_seller.post(f"{settings.SELLER_SERVICE_URL}/products/by-ids").mock(
+        side_effect=httpx.ConnectError("Connection refused")
+    )
 
     response = await client.get(
         f"/api/v1/orders/{order_id}",

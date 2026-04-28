@@ -1,25 +1,16 @@
 import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
-
 from alembic import context
+from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 from src.db.base_service import Base
-from src.models.cart import Cart
-from src.models.cart_items import CartItems
-from src.models.order import Order
-from src.models.order_item import OrderItems
-from src.models.order_market import OrderMarket
-from src.models.user import User
-from src.models.user_token import UserToken
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+
+load_dotenv()
+
 config = context.config
 
 database_url = os.getenv("ALEMBIC_URL")

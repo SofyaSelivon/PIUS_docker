@@ -1,11 +1,10 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from pathlib import Path
 
-from pydantic import Field, PostgresDsn
+from dotenv import load_dotenv
+from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+load_dotenv()
 
 
 class Settings(BaseSettings):

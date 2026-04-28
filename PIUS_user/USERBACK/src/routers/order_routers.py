@@ -1,8 +1,6 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from starlette import status
-
 from logreg.security import get_current_user
 from src.app.dependencies import get_order_service
 from src.models.user import User
@@ -13,6 +11,7 @@ from src.schemas.order_schemas import (
     UserOrdersResponse,
 )
 from src.services.order_service import OrderService
+from starlette import status
 
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
@@ -25,12 +24,10 @@ router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 )
 async def create_order(
     data: CreateOrderRequestSchema,
-    current_user: User = Depends(get_current_user),
-    order_service: OrderService = Depends(get_order_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    order_service: OrderService = Depends(get_order_service),  # noqa: B008
 ) -> CreateOrderResponseSchema:
-    return await order_service.create_order_service(
-        user_id=current_user.userId, order_data=data
-    )
+    return await order_service.create_order_service(user_id=current_user.userId, order_data=data)
 
 
 @router.get(
@@ -41,8 +38,8 @@ async def create_order(
 async def get_user_orders(
     page: int = Query(1, ge=1, description="Номер страницы"),
     limit: int = Query(10, ge=10, le=50, description="Количество заказов на странице"),
-    current_user: User = Depends(get_current_user),
-    order_service: OrderService = Depends(get_order_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    order_service: OrderService = Depends(get_order_service),  # noqa: B008
 ) -> UserOrdersResponse:
     return await order_service.get_user_orders_service(
         user_id=current_user.userId, page=page, limit=limit
@@ -56,8 +53,8 @@ async def get_user_orders(
 )
 async def get_order_details(
     order_id: UUID,
-    current_user: User = Depends(get_current_user),
-    order_service: OrderService = Depends(get_order_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    order_service: OrderService = Depends(get_order_service),  # noqa: B008
 ) -> OrderDetailResponseSchema:
     return await order_service.get_order_details_service(
         user_id=current_user.userId, order_id=order_id

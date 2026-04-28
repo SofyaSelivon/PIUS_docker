@@ -4,7 +4,6 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
 from src.app.application import get_app
 from src.app.config import settings
 from src.db.base_service import Base
@@ -13,9 +12,7 @@ from src.db.db import get_session
 TEST_DATABASE_URL = settings.TEST_DATABASE_URL
 TEST_USER = settings.TEST_USER
 
-engine_test = create_async_engine(
-    settings.TEST_DATABASE_URL, echo=False, poolclass=NullPool
-)
+engine_test = create_async_engine(settings.TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 session_maker_test = async_sessionmaker(engine_test, expire_on_commit=False)
 
 
@@ -51,9 +48,7 @@ async def client():
 
     app.dependency_overrides[get_session] = override_get_session
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://tests"
-    ) as asyncl:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://tests") as asyncl:
         yield asyncl
 
 

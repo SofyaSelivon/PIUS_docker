@@ -1,12 +1,10 @@
 import enum
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 import sqlalchemy as sa
-from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from src.db.base_service import Base
 
 
@@ -31,13 +29,11 @@ class Order(Base):
         sa.String, default=OrderStatus.GENERATED.value, nullable=False
     )
     createdAt: Mapped[date] = mapped_column(
-        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(UTC)
     )
 
     user = relationship("User", back_populates="orders")
     order_market = relationship("OrderMarket", back_populates="order", lazy="selectin")
     order_items = relationship("OrderItems", back_populates="order")
 
-    __table_args__ = (
-        sa.UniqueConstraint("orderId", "userId", name="unique_order_user"),
-    )
+    __table_args__ = (sa.UniqueConstraint("orderId", "userId", name="unique_order_user"),)

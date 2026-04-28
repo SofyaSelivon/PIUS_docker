@@ -3,9 +3,7 @@ from uuid import uuid4
 import httpx
 import respx
 from httpx import Response
-
 from src.app.config import settings
-
 
 TEST_USER = settings.TEST_USER
 TEST_PRODUCT_ID = str(uuid4())
@@ -34,16 +32,16 @@ MOCK_SELLER_RESPONSE = [
     }
 ]
 
+
 def mock_seller(respx_mock, response_data):
     respx_mock.post(f"{SELLER_SERVICE_URL}/products/by-ids").mock(
         return_value=Response(200, json=response_data)
     )
 
-    respx_mock.post(
-        "http://pius_backend:8002/api/v1/internal/products/info"
-    ).mock(
+    respx_mock.post("http://pius_backend:8002/api/v1/internal/products/info").mock(
         return_value=Response(200, json=response_data)
     )
+
 
 @respx.mock
 async def test_seller_service_unavailable(client, auth_token):
@@ -51,9 +49,7 @@ async def test_seller_service_unavailable(client, auth_token):
         side_effect=httpx.ConnectError("Connection refused")
     )
 
-    respx.post(
-        "http://pius_backend:8002/api/v1/internal/products/info"
-    ).mock(
+    respx.post("http://pius_backend:8002/api/v1/internal/products/info").mock(
         side_effect=httpx.ConnectError("Connection refused")
     )
 
@@ -165,10 +161,7 @@ async def test_get_cart_success(client, auth_token):
         json={"productId": TEST_PRODUCT_ID, "quantity": 2},
     )
 
-    response = await client.get(
-        "/api/v1/cart/",
-        headers={"Authorization": f"Bearer {auth_token}"}
-    )
+    response = await client.get("/api/v1/cart/", headers={"Authorization": f"Bearer {auth_token}"})
 
     assert response.status_code == 200
     data = response.json()
@@ -185,10 +178,7 @@ async def test_get_cart_unauthorized(client):
 
 
 async def test_get_cart_empty(client, auth_token):
-    response = await client.get(
-        "/api/v1/cart/",
-        headers={"Authorization": f"Bearer {auth_token}"}
-    )
+    response = await client.get("/api/v1/cart/", headers={"Authorization": f"Bearer {auth_token}"})
 
     assert response.status_code == 200
     data = response.json()

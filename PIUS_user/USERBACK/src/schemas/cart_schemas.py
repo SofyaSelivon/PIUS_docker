@@ -1,23 +1,19 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
 from src.schemas.pagination_schemas import PaginationSchema
 
 
 class AddToCartRequestSchema(BaseModel):
     productId: UUID
-    quantity: int = Field(
-        gt=0, description="Количество товара для добавления в корзину"
-    )
+    quantity: int = Field(gt=0, description="Количество товара для добавления в корзину")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class AddToCartResponseSchema(BaseModel):
-    success: Optional[bool] = True
+    success: bool | None = True
     cartCount: int
 
 
@@ -46,9 +42,9 @@ class SellerProductSchema(BaseModel):
     price: float
     available: int
     marketId: UUID
-    description: Optional[str] = None
+    description: str | None = None
     category: str
-    img: Optional[str] = None
+    img: str | None = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -78,13 +74,13 @@ class UpdateCartItemRequestSchema(BaseModel):
 
 
 class UpdateCartItemResponseSchema(BaseModel):
-    success: Optional[bool] = True
+    success: bool | None = True
     cartCount: int
     totalPrice: float
 
 
 class DeleteCartItemResponseSchema(BaseModel):
-    success: Optional[bool] = True
+    success: bool | None = True
     cartCount: int
     totalPrice: float
 

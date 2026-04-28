@@ -1,9 +1,8 @@
-from typing import Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.user import User
 
 
@@ -26,12 +25,7 @@ class AdminRepository:
         if not update_data:
             return await self.session.scalar(select(User).where(User.userId == user_id))
 
-        stmt = (
-            update(User)
-            .where(User.userId == user_id)
-            .values(**update_data)
-            .returning(User)
-        )
+        stmt = update(User).where(User.userId == user_id).values(**update_data).returning(User)
 
         result = await self.session.execute(stmt)
         await self.session.flush()

@@ -1,10 +1,9 @@
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Sequence
 from uuid import UUID
 
 from sqlalchemy import Row, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.cart_items import CartItems
 from src.models.order import Order, OrderStatus
 from src.models.order_item import OrderItems
@@ -65,9 +64,7 @@ class OrderRepository:
     async def get_user_orders(
         self, user_id: UUID, limit: int, offset: int
     ) -> tuple[Sequence[Row], int]:
-        count_query = (
-            select(func.count()).select_from(Order).where(Order.userId == user_id)
-        )
+        count_query = select(func.count()).select_from(Order).where(Order.userId == user_id)
         total_orders_cnt = await self.session.scalar(count_query)
 
         if not total_orders_cnt:

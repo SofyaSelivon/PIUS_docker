@@ -7,7 +7,6 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.config import settings
 from src.db.db import get_session
 from src.models.user import User
@@ -32,7 +31,8 @@ def create_access_token(data: dict):
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(get_session)
+    token: str = Depends(oauth2_scheme),
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,16 +40,14 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
             raise credentials_exception
         user_id = UUID(user_id_str)
 
-    except (JWTError, ValueError):
-        raise credentials_exception
+    except (JWTError, ValueError) as err:
+        raise credentials_exception from err
 
     stmt = select(User).where(User.userId == user_id)
     user = await session.scalar(stmt)
@@ -59,7 +57,7 @@ async def get_current_user(
     return user
 
 
-async def get_current_admin(current_user: User = Depends(get_current_user)):
+async def get_current_admin(current_user: User = Depends(get_current_user)):  # noqa: B008
     if not current_user.isAdmin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

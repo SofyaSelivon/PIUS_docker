@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-
 from logreg.auth_routers import router
 
 app = FastAPI(title="Auth & LogReg Service")
