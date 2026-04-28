@@ -2,7 +2,6 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.cart import Cart
 from src.models.cart_items import CartItems
 from src.models.user import User

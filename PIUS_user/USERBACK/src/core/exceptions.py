@@ -1,5 +1,3 @@
-import datetime as dt
-import logging
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -30,7 +28,8 @@ class NotEnoughStockError(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "error": "not_enough_stock",
-                "message": f"Product with id={self.product_id} has only {self.available} items available, but {self.requested} were requested",
+                "message": f"Product with id={self.product_id} has only {self.available} \
+                items available, but {self.requested} were requested",
                 "product_id": str(self.product_id),
                 "available": self.available,
                 "requested": self.requested,

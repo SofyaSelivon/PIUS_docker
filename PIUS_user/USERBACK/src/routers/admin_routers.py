@@ -1,10 +1,8 @@
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from logreg.security import get_current_admin
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.db import get_session
 from src.schemas.admin_schemas import (
     AdminUserResponseSchema,
@@ -20,12 +18,12 @@ router = APIRouter(
 
 @router.get(
     "/users",
-    response_model=List[AdminUserResponseSchema],
+    response_model=list[AdminUserResponseSchema],
     description="Получить список всех пользователей",
 )
 async def get_all_users(
-    session: AsyncSession = Depends(get_session),
-) -> List[AdminUserResponseSchema]:
+    session: AsyncSession = Depends(get_session),  # noqa: B008
+) -> list[AdminUserResponseSchema]:
     admin_service = AdminService(session)
     return await admin_service.get_all_users_service()
 
@@ -37,7 +35,8 @@ async def get_all_users(
     description="Удалить пользователя навсегда",
 )
 async def delete_user(
-    user_id: UUID, session: AsyncSession = Depends(get_session)
+    user_id: UUID,
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> UserDeleteSchemaResponse:
     admin_service = AdminService(session)
     return await admin_service.delete_user_service(user_id)
@@ -51,7 +50,7 @@ async def delete_user(
 async def update_user(
     user_id: UUID,
     user_data: UserUpdateSchema,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> AdminUserResponseSchema:
     admin_service = AdminService(session)
     update_dict = user_data.model_dump(exclude_unset=True)

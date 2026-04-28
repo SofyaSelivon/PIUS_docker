@@ -1,13 +1,12 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-from starlette.middleware.cors import CORSMiddleware
-
 from logreg.auth_routers import router as auth_router
 from src.routers.admin_routers import router as admin_router
 from src.routers.cart_routers import router as cart_router
 from src.routers.healthcheck_router import router as healthcheck_router
 from src.routers.order_routers import router as order_router
 from src.routers.user_routers import router as user_router
+from starlette.middleware.cors import CORSMiddleware
 
 
 def get_app() -> FastAPI:

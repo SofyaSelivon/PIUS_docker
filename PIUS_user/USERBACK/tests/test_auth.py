@@ -4,6 +4,7 @@ from src.app.config import settings
 
 TEST_USER = settings.TEST_USER
 
+
 async def test_register_success(client):
     response = await client.post("/api/v1/auth/register", json=TEST_USER)
     assert response.status_code == 201
@@ -47,9 +48,7 @@ async def test_login_wrong_password(client):
 async def test_get_me_success(client):
     reg_response = await client.post("/api/v1/auth/register", json=TEST_USER)
     token = reg_response.json()["token"]
-    response = await client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-    )
+    response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
     data = response.json()

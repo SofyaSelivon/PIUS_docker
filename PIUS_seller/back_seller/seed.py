@@ -17,7 +17,6 @@ from app.security.jwt_dependency import ALGORITHM, SECRET_KEY
 
 
 async def seed():
-
     print("Creating tables (if not exist)")
 
     async with engine.begin() as conn:

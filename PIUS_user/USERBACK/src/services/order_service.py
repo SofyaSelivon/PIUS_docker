@@ -5,7 +5,6 @@ from uuid import UUID
 import httpx
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.config import settings
 from src.core.exceptions import NotEnoughStockError, NotFoundError
 from src.repositories.cart_repository import CartRepository
@@ -40,8 +39,8 @@ class OrderService:
                 response.raise_for_status()
                 return {product["id"]: product for product in response.json()}
 
-            except Exception:
-                raise HTTPException(status_code=503, detail="Сервис товаров недоступен")
+            except Exception as err:
+                raise HTTPException(status_code=503, detail="Сервис товаров недоступен") from err
 
     async def reserve_products_at_seller(self, items_to_reserve: list[dict]):
         async with httpx.AsyncClient() as client:
@@ -59,11 +58,11 @@ class OrderService:
 
                 response.raise_for_status()
 
-            except httpx.RequestError:
+            except httpx.RequestError as err:
                 raise HTTPException(
                     status_code=503,
                     detail="Сервис товаров недоступен для резервирования",
-                )
+                ) from err
 
     async def create_order_in_seller(
         self,
@@ -87,11 +86,11 @@ class OrderService:
 
                     response.raise_for_status()
 
-            except httpx.RequestError:
+            except httpx.RequestError as err:
                 raise HTTPException(
                     status_code=503,
                     detail="Ошибка создания заказа в seller-сервисе",
-                )
+                ) from err
 
     async def create_order_service(
         self, user_id: UUID, order_data: CreateOrderRequestSchema
@@ -114,9 +113,7 @@ class OrderService:
             product_data = products_info.get(id_str)
 
             if not product_data:
-                raise HTTPException(
-                    status_code=400, detail=f"Товар {id_str} больше недоступен"
-                )
+                raise HTTPException(status_code=400, detail=f"Товар {id_str} больше недоступен")
 
             if cart_item.quantity > product_data["available"]:
                 raise NotEnoughStockError(
@@ -141,9 +138,7 @@ class OrderService:
                 }
             )
 
-            items_for_reservation.append(
-                {"productId": id_str, "quantity": cart_item.quantity}
-            )
+            items_for_reservation.append({"productId": id_str, "quantity": cart_item.quantity})
 
         await self.reserve_products_at_seller(items_to_reserve=items_for_reservation)
 

@@ -3,7 +3,6 @@ from uuid import UUID
 import httpx
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.app.config import settings
 from src.core.exceptions import NotEnoughStockError, NotFoundError
 from src.repositories.cart_repository import CartRepository
@@ -43,17 +42,14 @@ class CartService:
                 response.raise_for_status()
                 products_data = response.json()
 
-                return {
-                    UUID(p["id"]): SellerProductSchema.model_validate(p)
-                    for p in products_data
-                }
+                return {UUID(p["id"]): SellerProductSchema.model_validate(p) for p in products_data}
 
-            except Exception as e:
-                print(f"Ошибка связи с сервисом селлера: {e}")
+            except Exception as err:
+                print(f"Ошибка связи с сервисом селлера: {err}")
                 raise HTTPException(
                     status_code=503,
                     detail="Сервис товаров временно недоступен",
-                )
+                ) from err
 
     async def add_to_cart_service(
         self, user_id: UUID, data: AddToCartRequestSchema
@@ -65,9 +61,7 @@ class CartService:
             raise NotFoundError(data.productId, "Product")
 
         if prod_data.available < data.quantity:
-            raise NotEnoughStockError(
-                data.productId, prod_data.available, data.quantity
-            )
+            raise NotEnoughStockError(data.productId, prod_data.available, data.quantity)
 
         new_cart_count = await self.cart_rep.add_item_to_cart(
             user_id=user_id,

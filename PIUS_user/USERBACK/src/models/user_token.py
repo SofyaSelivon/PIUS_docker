@@ -1,9 +1,8 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
-
 from src.db.base_service import Base
 
 
@@ -17,5 +16,5 @@ class UserToken(Base):
     token: Mapped[str] = mapped_column(sa.String, index=True)
     expiresAt: Mapped[datetime] = mapped_column(sa.TIMESTAMP(timezone=True))
     createdAt: Mapped[datetime] = mapped_column(
-        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
+        sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(UTC)
     )

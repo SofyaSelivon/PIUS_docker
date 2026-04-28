@@ -6,17 +6,16 @@ Create Date: 2026-03-11 22:30:38.749032
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "e33d919c6875"
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -80,9 +79,7 @@ def upgrade() -> None:
         sa.Column("deliveryComment", sa.String(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum(
-                "GENERATED", "IN_PROGRESS", "COMPLETED", "DECLINED", name="orderstatus"
-            ),
+            sa.Enum("GENERATED", "IN_PROGRESS", "COMPLETED", "DECLINED", name="orderstatus"),
             nullable=False,
         ),
         sa.Column("createdAt", sa.TIMESTAMP(), nullable=False),
@@ -153,12 +150,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_products_category"), "products", ["category"], unique=False
-    )
-    op.create_index(
-        op.f("ix_products_marketId"), "products", ["marketId"], unique=False
-    )
+    op.create_index(op.f("ix_products_category"), "products", ["category"], unique=False)
+    op.create_index(op.f("ix_products_marketId"), "products", ["marketId"], unique=False)
     op.create_table(
         "OrderItems",
         sa.Column("id", sa.Uuid(), nullable=False),

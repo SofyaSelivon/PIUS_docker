@@ -2,16 +2,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
-from app.models.product import Product
-from app.models.user import User
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
+from app.models.product import Product
+from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/internal/products", tags=["internal-products"])
+
 
 class ProductsInfoRequest(BaseModel):
     productIds: list[UUID]
@@ -33,8 +34,10 @@ class CreateOrderInternal(BaseModel):
     totalAmount: float
     items: list[dict]
 
+
 class ProductsByIdsRequest(BaseModel):
     productIds: list[UUID]
+
 
 @router.get("/")
 async def get_products(page: int = 1, limit: int = 12, db: AsyncSession = Depends(get_db)):
@@ -44,10 +47,7 @@ async def get_products(page: int = 1, limit: int = 12, db: AsyncSession = Depend
     total = total_result.scalar() or 0
 
     result = await db.execute(
-        select(Product)
-        .order_by(Product.createdAt.desc())
-        .offset(offset)
-        .limit(limit)
+        select(Product).order_by(Product.createdAt.desc()).offset(offset).limit(limit)
     )
 
     products = result.scalars().all()
@@ -75,11 +75,10 @@ async def get_products(page: int = 1, limit: int = 12, db: AsyncSession = Depend
         },
     }
 
+
 @router.post("/info")
 async def get_products_info(body: ProductsInfoRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Product).where(Product.id.in_(body.productIds))
-    )
+    result = await db.execute(select(Product).where(Product.id.in_(body.productIds)))
     products = result.scalars().all()
 
     return [
@@ -96,13 +95,12 @@ async def get_products_info(body: ProductsInfoRequest, db: AsyncSession = Depend
         for p in products
     ]
 
+
 @router.post("/reserve")
 async def reserve_products(body: ReserveRequest, db: AsyncSession = Depends(get_db)):
     product_ids = [item.productId for item in body.items]
 
-    result = await db.execute(
-        select(Product).where(Product.id.in_(product_ids))
-    )
+    result = await db.execute(select(Product).where(Product.id.in_(product_ids)))
     products = result.scalars().all()
 
     products_map = {p.id: p for p in products}
@@ -122,6 +120,7 @@ async def reserve_products(body: ReserveRequest, db: AsyncSession = Depends(get_
     await db.commit()
 
     return {"success": True}
+
 
 @router.post("/orders")
 async def create_order_internal(data: CreateOrderInternal, db: AsyncSession = Depends(get_db)):
@@ -166,14 +165,13 @@ async def create_order_internal(data: CreateOrderInternal, db: AsyncSession = De
 
     return {"success": True}
 
+
 @router.post("/by-ids")
 async def get_products_by_ids(
     body: ProductsByIdsRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Product).where(Product.id.in_(body.productIds))
-    )
+    result = await db.execute(select(Product).where(Product.id.in_(body.productIds)))
 
     products = result.scalars().all()
 

@@ -2,7 +2,6 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.repositories.admin_repository import AdminRepository as adminrepo
 from src.schemas.admin_schemas import AdminUserResponseSchema, UserDeleteSchemaResponse
 

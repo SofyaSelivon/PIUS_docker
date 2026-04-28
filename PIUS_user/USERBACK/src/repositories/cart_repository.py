@@ -1,9 +1,9 @@
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Row, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.cart import Cart
 from src.models.cart_items import CartItems
 
@@ -12,9 +12,7 @@ class CartRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add_item_to_cart(
-        self, user_id: UUID, product_id: UUID, quantity: int
-    ) -> int:
+    async def add_item_to_cart(self, user_id: UUID, product_id: UUID, quantity: int) -> int:
         query_cart = select(Cart).where(Cart.userId == user_id)
         result = await self.session.execute(query_cart)
         cart = result.scalar_one_or_none()
@@ -35,9 +33,7 @@ class CartRepository:
         if item:
             item.quantity += quantity
         else:
-            new_item = CartItems(
-                cartId=cart.id, productId=product_id, quantity=quantity
-            )
+            new_item = CartItems(cartId=cart.id, productId=product_id, quantity=quantity)
             self.session.add(new_item)
 
         await self.session.flush()
@@ -49,21 +45,15 @@ class CartRepository:
 
         return result
 
-    async def get_cart_items(
-        self, user_id: UUID
-    ) -> Sequence[Row[tuple[Any, Any, Any]]]:
+    async def get_cart_items(self, user_id: UUID) -> Sequence[Row[tuple[Any, Any, Any]]]:
         query = (
-            select(CartItems)
-            .join(Cart, Cart.id == CartItems.cartId)
-            .where(Cart.userId == user_id)
+            select(CartItems).join(Cart, Cart.id == CartItems.cartId).where(Cart.userId == user_id)
         )
 
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def update_items_quantity(
-        self, user_id: UUID, product_id: UUID, quantity: int
-    ) -> int:
+    async def update_items_quantity(self, user_id: UUID, product_id: UUID, quantity: int) -> int:
         query_cart = select(Cart).where(Cart.userId == user_id)
         result = await self.session.execute(query_cart)
         cart = result.scalar()

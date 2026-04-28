@@ -1,15 +1,15 @@
 from datetime import date
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class UserUpdateRequest(BaseModel):
-    login: Optional[str] = None
-    firstName: Optional[str] = None
-    lastName: Optional[str] = None
-    patronymic: Optional[str] = None
-    dateOfBirth: Optional[date] = None
-    city: Optional[str] = None
-    telegram: Optional[str] = None
-    telegramChatId: Optional[str] = None
-    isSeller: Optional[bool] = None
+    login: str | None = None
+    firstName: str | None = None
+    lastName: str | None = None
+    patronymic: str | None = None
+    dateOfBirth: date | None = None
+    city: str | None = None
+    telegram: str | None = None
+    telegramChatId: str | None = None
+    isSeller: bool | None = None

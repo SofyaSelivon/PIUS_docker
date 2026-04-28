@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -9,11 +8,11 @@ class RegisterRequest(BaseModel):
     login: str
     password: str
     firstName: str
-    lastName: Optional[str] = None
-    patronymic: Optional[str] = None
-    dateOfBirth: Optional[date] = None
-    city: Optional[str] = None
-    telegram: Optional[str] = None
+    lastName: str | None = None
+    patronymic: str | None = None
+    dateOfBirth: date | None = None
+    city: str | None = None
+    telegram: str | None = None
     isSeller: bool = False
 
 
@@ -39,6 +38,6 @@ class RegisterAuthResponse(BaseModel):
 
 class AuthResponse(BaseModel):
     success: bool
-    user: Optional[UserResponseSchema] = None
-    token: Optional[str] = None
-    message: Optional[str] = None
+    user: UserResponseSchema | None = None
+    token: str | None = None
+    message: str | None = None

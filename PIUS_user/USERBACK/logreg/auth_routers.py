@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from logreg.auth_service import AuthService
 from logreg.security import get_current_user
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.db import get_session
 from src.models.user import User
 from src.schemas.auth_schemas import (
@@ -22,7 +21,8 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
     description="Создание нового юзера и возвращение токена доступа",
 )
 async def register(
-    request: RegisterRequest, session: AsyncSession = Depends(get_session)
+    request: RegisterRequest,
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> RegisterAuthResponse:
     auth_service = AuthService(session)
     user, result = await auth_service.register(request)
@@ -41,7 +41,8 @@ async def register(
     description="Вход в систему, возвращение токена доступа",
 )
 async def login(
-    request: LoginRequest, session: AsyncSession = Depends(get_session)
+    request: LoginRequest,
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> RegisterAuthResponse:
     auth_service = AuthService(session)
     user, result = await auth_service.login(request)
@@ -61,6 +62,6 @@ async def login(
     description="Возвращение информации о текущем авторизованном юзере",
 )
 async def get_auth_me(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> UserResponseSchema:
     return UserResponseSchema.model_validate(current_user)

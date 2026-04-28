@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
 from src.models.order import OrderStatus
 from src.schemas.pagination_schemas import PaginationSchema
 
@@ -12,9 +10,7 @@ class CreateOrderRequestSchema(BaseModel):
     deliveryAddress: str = Field(min_length=5, description="Адрес доставки")
     deliveryCity: str = Field(min_length=2, description="Город доставки")
     phone: str = Field(min_length=10, description="Номер телефона для связи")
-    deliveryComment: str | None = Field(
-        description="Комментарий к доставке (необязательно)"
-    )
+    deliveryComment: str | None = Field(description="Комментарий к доставке (необязательно)")
 
 
 class OrderItemDetailSchema(BaseModel):
@@ -48,7 +44,7 @@ class OrderDetailResponseSchema(BaseModel):
 
 class CreateOrderResponseSchema(BaseModel):
     success: bool = True
-    orderId: Optional[UUID] = None
+    orderId: UUID | None = None
 
 
 class OrderHistoryItemSchema(BaseModel):

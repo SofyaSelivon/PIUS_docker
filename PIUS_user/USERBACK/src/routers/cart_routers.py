@@ -1,13 +1,10 @@
-from typing import List
 from uuid import UUID
 
 import httpx
 from fastapi import APIRouter
 from fastapi.params import Depends
-from pydantic import BaseModel
-from starlette import status
-
 from logreg.security import get_current_user
+from pydantic import BaseModel
 from src.app.dependencies import get_cart_service
 from src.models.user import User
 from src.schemas.cart_schemas import (
@@ -21,12 +18,13 @@ from src.schemas.cart_schemas import (
     UpdateCartItemResponseSchema,
 )
 from src.services.cart_service import SELLER_SERVICE_URL, CartService
+from starlette import status
 
 router = APIRouter(prefix="/api/v1/cart", tags=["cart"])
 
 
 class ProductsByIdsRequest(BaseModel):
-    productIds: List[UUID]
+    productIds: list[UUID]
 
 
 @router.post(
@@ -36,8 +34,8 @@ class ProductsByIdsRequest(BaseModel):
 )
 async def add_to_cart(
     data: AddToCartRequestSchema,
-    current_user: User = Depends(get_current_user),
-    cart_service: CartService = Depends(get_cart_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    cart_service: CartService = Depends(get_cart_service),  # noqa: B008
 ) -> AddToCartResponseSchema:
     return await cart_service.add_to_cart_service(
         user_id=current_user.userId,
@@ -50,8 +48,8 @@ async def add_to_cart(
     response_model=CartResponseSchema,
 )
 async def get_cart(
-    current_user: User = Depends(get_current_user),
-    cart_service: CartService = Depends(get_cart_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    cart_service: CartService = Depends(get_cart_service),  # noqa: B008
 ) -> CartResponseSchema:
     return await cart_service.get_cart_service(
         user_id=current_user.userId,
@@ -62,14 +60,12 @@ async def get_cart(
 async def update_cart_item(
     product_id: UUID,
     data: UpdateCartItemRequestSchema,
-    current_user: User = Depends(get_current_user),
-    cart_service: CartService = Depends(get_cart_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    cart_service: CartService = Depends(get_cart_service),  # noqa: B008
 ) -> UpdateCartItemResponseSchema:
     data.productId = product_id
 
-    return await cart_service.update_cart_item_service(
-        user_id=current_user.userId, data=data
-    )
+    return await cart_service.update_cart_item_service(user_id=current_user.userId, data=data)
 
 
 @router.delete(
@@ -78,8 +74,8 @@ async def update_cart_item(
 )
 async def delete_cart_item(
     product_id: UUID,
-    current_user: User = Depends(get_current_user),
-    cart_service: CartService = Depends(get_cart_service),
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    cart_service: CartService = Depends(get_cart_service),  # noqa: B008
 ) -> DeleteCartItemResponseSchema:
     return await cart_service.delete_cart_item_service(
         user_id=current_user.userId,
@@ -90,7 +86,7 @@ async def delete_cart_item(
 @router.post("/products/by-ids", response_model=list[SellerProductSchema])
 async def get_products_by_ids_via_cart(
     data: ProductsByIdsRequest,
-    cart_service: CartService = Depends(get_cart_service),
+    cart_service: CartService = Depends(get_cart_service),  # noqa: B008
 ) -> list[SellerProductSchema]:
     products = await cart_service.get_products_from_seller(data.productIds)
     return list(products.values())

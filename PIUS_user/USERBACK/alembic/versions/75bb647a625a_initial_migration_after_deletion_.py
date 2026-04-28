@@ -6,32 +6,25 @@ Create Date: 2026-04-01 01:22:49.941720
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "75bb647a625a"
-down_revision: Union[str, Sequence[str], None] = "3d4644498c2a"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "3d4644498c2a"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     """Upgrade schema."""
     # 1. Удаляем внешние ключи
-    op.drop_constraint(
-        op.f("OrderItems_productId_fkey"), "OrderItems", type_="foreignkey"
-    )
-    op.drop_constraint(
-        op.f("cartItems_productId_fkey"), "cartItems", type_="foreignkey"
-    )
-    op.drop_constraint(
-        op.f("order_markets_marketId_fkey"), "order_markets", type_="foreignkey"
-    )
+    op.drop_constraint(op.f("OrderItems_productId_fkey"), "OrderItems", type_="foreignkey")
+    op.drop_constraint(op.f("cartItems_productId_fkey"), "cartItems", type_="foreignkey")
+    op.drop_constraint(op.f("order_markets_marketId_fkey"), "order_markets", type_="foreignkey")
 
     # 2. Удаляем индексы
     op.drop_index(op.f("ix_products_category"), table_name="products")
@@ -63,9 +56,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["userId"], ["users.userId"], name=op.f("market_userId_fkey")
-        ),
+        sa.ForeignKeyConstraint(["userId"], ["users.userId"], name=op.f("market_userId_fkey")),
         sa.PrimaryKeyConstraint("marketId", name=op.f("market_pkey")),
         sa.UniqueConstraint(
             "marketName",
@@ -118,12 +109,8 @@ def downgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("products_pkey")),
     )
-    op.create_index(
-        op.f("ix_products_marketId"), "products", ["marketId"], unique=False
-    )
-    op.create_index(
-        op.f("ix_products_category"), "products", ["category"], unique=False
-    )
+    op.create_index(op.f("ix_products_marketId"), "products", ["marketId"], unique=False)
+    op.create_index(op.f("ix_products_category"), "products", ["category"], unique=False)
 
     # Восстанавливаем внешние ключи
     op.create_foreign_key(
