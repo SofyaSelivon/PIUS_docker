@@ -17,7 +17,7 @@ interface Props {
 
 export const Header = ({ cartCount, userName }: Props) => {
   const navigate = useNavigate();
-  
+
   return (
     <AppBar
       position="sticky"

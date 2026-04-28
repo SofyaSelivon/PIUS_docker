@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: seller-hooks
+        entry: bash -c "cd PIUS_seller && pre-commit run --all-files"
+        language: system
+
+      - id: user-hooks
+        entry: bash -c "cd PIUS_user/USERBACK && pre-commit run --all-files"
+        language: system
