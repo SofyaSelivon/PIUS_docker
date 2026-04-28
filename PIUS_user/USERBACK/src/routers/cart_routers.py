@@ -15,6 +15,8 @@ from src.schemas.cart_schemas import (
     AddToCartResponseSchema,
     CartResponseSchema,
     DeleteCartItemResponseSchema,
+    ProductsListResponseSchema,
+    SellerProductSchema,
     UpdateCartItemRequestSchema,
     UpdateCartItemResponseSchema,
 )
@@ -36,7 +38,7 @@ async def add_to_cart(
     data: AddToCartRequestSchema,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
-):
+) -> AddToCartResponseSchema:
     return await cart_service.add_to_cart_service(
         user_id=current_user.userId,
         data=data,
@@ -50,24 +52,23 @@ async def add_to_cart(
 async def get_cart(
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
-):
+) -> CartResponseSchema:
     return await cart_service.get_cart_service(
         user_id=current_user.userId,
     )
 
 
-@router.patch("/{product_id}")
+@router.patch("/{product_id}", response_model=UpdateCartItemResponseSchema)
 async def update_cart_item(
     product_id: UUID,
     data: UpdateCartItemRequestSchema,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
-):
+) -> UpdateCartItemResponseSchema:
     data.productId = product_id
 
     return await cart_service.update_cart_item_service(
-        user_id=current_user.userId,
-        data=data
+        user_id=current_user.userId, data=data
     )
 
 
@@ -79,25 +80,23 @@ async def delete_cart_item(
     product_id: UUID,
     current_user: User = Depends(get_current_user),
     cart_service: CartService = Depends(get_cart_service),
-):
+) -> DeleteCartItemResponseSchema:
     return await cart_service.delete_cart_item_service(
         user_id=current_user.userId,
         product_id=product_id,
     )
 
 
-@router.post(
-    "/products/by-ids",
-)
+@router.post("/products/by-ids", response_model=list[SellerProductSchema])
 async def get_products_by_ids_via_cart(
     data: ProductsByIdsRequest,
     cart_service: CartService = Depends(get_cart_service),
-):
+) -> list[SellerProductSchema]:
     products = await cart_service.get_products_from_seller(data.productIds)
     return list(products.values())
 
 
-@router.get("/products")
+@router.get("/products", response_model=ProductsListResponseSchema)
 async def get_products_via_cart(
     page: int = 1,
     limit: int = 12,
@@ -106,7 +105,7 @@ async def get_products_via_cart(
     minPrice: float | None = None,
     maxPrice: float | None = None,
     available: bool | None = None,
-):
+) -> ProductsListResponseSchema:
     params = {
         "page": page,
         "limit": limit,
@@ -130,4 +129,10 @@ async def get_products_via_cart(
 
         response.raise_for_status()
 
-        return response.json()
+        data = response.json()
+        pagination = data.get("pagination", {})
+
+        pagination["totalItems"] = pagination.get("total", 0)
+
+        data["pagination"] = pagination
+        return ProductsListResponseSchema.model_validate(data)

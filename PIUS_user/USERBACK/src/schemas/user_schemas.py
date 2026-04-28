@@ -25,6 +25,7 @@ class UserMeResponseSchema(BaseModel):
     login: str
     firstName: str
     isSeller: bool
+    isAdmin: bool = Field(default=False, alias="is_admin")
     cartCount: int = Field(0, description="Количество товаров в корзине")
 
     model_config = ConfigDict(from_attributes=True)

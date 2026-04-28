@@ -7,13 +7,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.config import settings
 from src.core.exceptions import NotEnoughStockError, NotFoundError
 from src.repositories.cart_repository import CartRepository
-from src.schemas.cart_schemas import AddToCartRequestSchema, UpdateCartItemRequestSchema
+from src.schemas.cart_schemas import (
+    AddToCartRequestSchema,
+    AddToCartResponseSchema,
+    CartItemResponseSchema,
+    CartResponseSchema,
+    DeleteCartItemResponseSchema,
+    SellerProductSchema,
+    UpdateCartItemRequestSchema,
+    UpdateCartItemResponseSchema,
+)
 
 SELLER_SERVICE_URL = settings.SELLER_SERVICE_URL
 
 
 class CartService:
-
     def __init__(self, session: AsyncSession):
         self.session = session
         self.cart_rep = CartRepository(self.session)
@@ -35,7 +43,10 @@ class CartService:
                 response.raise_for_status()
                 products_data = response.json()
 
-                return {UUID(p["id"]): p for p in products_data}
+                return {
+                    UUID(p["id"]): SellerProductSchema.model_validate(p)
+                    for p in products_data
+                }
 
             except Exception as e:
                 print(f"Ошибка связи с сервисом селлера: {e}")
@@ -46,17 +57,16 @@ class CartService:
 
     async def add_to_cart_service(
         self, user_id: UUID, data: AddToCartRequestSchema
-    ) -> dict:
-
+    ) -> AddToCartResponseSchema:
         products_info = await self.get_products_from_seller([data.productId])
         prod_data = products_info.get(data.productId)
 
         if not prod_data:
             raise NotFoundError(data.productId, "Product")
 
-        if prod_data["available"] < data.quantity:
+        if prod_data.available < data.quantity:
             raise NotEnoughStockError(
-                data.productId, prod_data["available"], data.quantity
+                data.productId, prod_data.available, data.quantity
             )
 
         new_cart_count = await self.cart_rep.add_item_to_cart(
@@ -65,13 +75,13 @@ class CartService:
             quantity=data.quantity,
         )
 
-        return {"success": True, "cartCount": new_cart_count}
+        return AddToCartResponseSchema(cartCount=new_cart_count)
 
-    async def get_cart_service(self, user_id: UUID) -> dict:
+    async def get_cart_service(self, user_id: UUID) -> CartResponseSchema:
         cart_items = await self.cart_rep.get_cart_items(user_id=user_id)
 
         if not cart_items:
-            return {"items": [], "totalPrice": 0.0}
+            return CartResponseSchema(items=[], totalPrice=0.0)
 
         product_ids = [item.productId for item in cart_items]
         products_info = await self.get_products_from_seller(product_ids)
@@ -84,40 +94,37 @@ class CartService:
             if not prod_data:
                 continue
 
-            price = float(prod_data["price"])
+            price = prod_data.price
             total_price += price * item.quantity
 
             items_list.append(
-                {
-                    "productId": item.productId,
-                    "name": prod_data["name"],
-                    "price": price,
-                    "available": prod_data["available"],
-                    "quantity": item.quantity,
-                    "img": prod_data.get("img"),
-                    "market": prod_data.get("market"),
-                }
+                CartItemResponseSchema.model_validate(
+                    {
+                        "productId": item.productId,
+                        "name": prod_data.name,
+                        "price": price,
+                        "available": prod_data.available,
+                        "quantity": item.quantity,
+                        "img": prod_data.img,
+                    }
+                )
             )
 
-        return {
-            "items": items_list,
-            "totalPrice": round(total_price, 2),
-        }
+        return CartResponseSchema(items=items_list, totalPrice=total_price)
 
     async def update_cart_item_service(
         self, user_id: UUID, data: UpdateCartItemRequestSchema
-    ) -> dict:
-
+    ) -> UpdateCartItemResponseSchema:
         products_info = await self.get_products_from_seller([data.productId])
         prod_data = products_info.get(data.productId)
 
         if not prod_data:
             raise NotFoundError(data.productId, "Product")
 
-        if data.quantity > prod_data["available"]:
+        if data.quantity > prod_data.available:
             raise NotEnoughStockError(
                 product_id=data.productId,
-                available=prod_data["available"],
+                available=prod_data.available,
                 requested=data.quantity,
             )
 
@@ -129,16 +136,13 @@ class CartService:
 
         cart_data = await self.get_cart_service(user_id)
 
-        return {
-            "success": True,
-            "cartCount": cart_cnt,
-            "totalPrice": cart_data["totalPrice"],
-        }
+        return UpdateCartItemResponseSchema(
+            success=True, cartCount=cart_cnt, totalPrice=cart_data.totalPrice
+        )
 
     async def delete_cart_item_service(
         self, user_id: UUID, product_id: UUID
-    ) -> dict:
-
+    ) -> DeleteCartItemResponseSchema:
         cart_cnt = await self.cart_rep.delete_cart_item(
             user_id=user_id,
             product_id=product_id,
@@ -146,8 +150,6 @@ class CartService:
 
         cart_data = await self.get_cart_service(user_id)
 
-        return {
-            "success": True,
-            "cartCount": cart_cnt,
-            "totalPrice": cart_data["totalPrice"],
-        }
+        return DeleteCartItemResponseSchema(
+            success=True, cartCount=cart_cnt, totalPrice=cart_data.totalPrice
+        )

@@ -1,7 +1,9 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
+
 from pydantic import BaseModel
+
 
 class AdminUserResponseSchema(BaseModel):
     userId: UUID
@@ -25,3 +27,8 @@ class UserUpdateSchema(BaseModel):
     telegram: Optional[str] = None
     telegramChatId: Optional[str] = None
     isSeller: Optional[bool] = None
+
+
+class UserDeleteSchemaResponse(BaseModel):
+    success: bool
+    message: str = "Пользователь успешно удален"

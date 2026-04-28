@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -32,24 +34,26 @@ class OrderMarketDetailItemSchema(BaseModel):
 
 class OrderDetailResponseSchema(BaseModel):
     orderId: UUID
-    createdAt: str
+    createdAt: datetime
     status: str
     totalPrice: float
     deliveryAddress: str
     deliveryCity: str
     markets: list[OrderMarketDetailItemSchema]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True, json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class CreateOrderResponseSchema(BaseModel):
-    success: bool
-    orderId: UUID
+    success: bool = True
+    orderId: Optional[UUID] = None
 
 
 class OrderHistoryItemSchema(BaseModel):
     orderId: UUID
-    createdAt: str
+    createdAt: datetime
     status: OrderStatus
     totalPrice: float
     totalItems: int
@@ -58,5 +62,11 @@ class OrderHistoryItemSchema(BaseModel):
 
 
 class OrderHistoryResponseSchema(BaseModel):
+    orders: list[OrderHistoryItemSchema]
+    pagination: PaginationSchema
+
+
+class UserOrdersResponse(BaseModel):
+    success: bool = True
     orders: list[OrderHistoryItemSchema]
     pagination: PaginationSchema

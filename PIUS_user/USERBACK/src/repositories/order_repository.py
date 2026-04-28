@@ -24,7 +24,6 @@ class OrderRepository:
         markets_data: dict,
         cart_id: UUID,
     ) -> UUID | None:
-
         new_order = Order(
             userId=user_id,
             totalPrice=Decimal(total_order_price),
@@ -57,9 +56,7 @@ class OrderRepository:
                 )
                 self.session.add(order_item)
 
-        await self.session.execute(
-            delete(CartItems).where(CartItems.cartId == cart_id)
-        )
+        await self.session.execute(delete(CartItems).where(CartItems.cartId == cart_id))
 
         await self.session.commit()
 

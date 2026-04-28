@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class RegisterRequest(BaseModel):
@@ -27,6 +27,14 @@ class UserResponseSchema(BaseModel):
     login: str
     firstName: str
     isSeller: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RegisterAuthResponse(BaseModel):
+    success: bool = True
+    user: UserResponseSchema
+    token: str
 
 
 class AuthResponse(BaseModel):

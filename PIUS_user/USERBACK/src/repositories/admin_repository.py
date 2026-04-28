@@ -1,8 +1,11 @@
 from typing import Sequence
 from uuid import UUID
-from sqlalchemy import select, update, delete
+
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.models.user import User
+
 
 class AdminRepository:
     def __init__(self, session: AsyncSession):

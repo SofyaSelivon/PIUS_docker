@@ -1,10 +1,11 @@
 from dotenv import load_dotenv
 
-load_dotenv()
-
 import asyncio
 import logging
+
 import uvicorn
+
+load_dotenv()
 
 
 logging.basicConfig(

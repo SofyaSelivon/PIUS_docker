@@ -35,7 +35,9 @@ class AuthService:
         self.session.add(user)
         await self.session.flush()
 
-        token_str = create_access_token({"sub": str(user.userId)})
+        token_str = create_access_token(
+            {"sub": str(user.userId), "is_admin": user.isAdmin}
+        )
         token = UserToken(
             userId=user.userId,
             token=token_str,
@@ -53,7 +55,9 @@ class AuthService:
         if not user or not verify_password(request.password, user.passwordHash):
             return None, "Неверный логин или пароль"
 
-        token_str = create_access_token({"sub": str(user.userId)})
+        token_str = create_access_token(
+            {"sub": str(user.userId), "is_admin": user.isAdmin}
+        )
         token = UserToken(
             userId=user.userId,
             token=token_str,

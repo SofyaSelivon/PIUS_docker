@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import sqlalchemy as sa
-from sqlalchemy import func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base_service import Base
@@ -22,6 +21,9 @@ class User(Base):
     telegram: Mapped[None | str] = mapped_column(sa.String(), unique=True)
     telegramChatId: Mapped[None | str] = mapped_column(sa.String(), unique=True)
     isSeller: Mapped[bool] = mapped_column(sa.Boolean, index=True)
+    isAdmin: Mapped[bool] = mapped_column(
+        sa.Boolean, index=True, default=False, server_default=sa.text("false")
+    )
     createdAt: Mapped[datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

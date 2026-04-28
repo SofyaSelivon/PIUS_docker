@@ -15,7 +15,6 @@ class CartRepository:
     async def add_item_to_cart(
         self, user_id: UUID, product_id: UUID, quantity: int
     ) -> int:
-
         query_cart = select(Cart).where(Cart.userId == user_id)
         result = await self.session.execute(query_cart)
         cart = result.scalar_one_or_none()
@@ -53,7 +52,6 @@ class CartRepository:
     async def get_cart_items(
         self, user_id: UUID
     ) -> Sequence[Row[tuple[Any, Any, Any]]]:
-
         query = (
             select(CartItems)
             .join(Cart, Cart.id == CartItems.cartId)
@@ -65,7 +63,7 @@ class CartRepository:
 
     async def update_items_quantity(
         self, user_id: UUID, product_id: UUID, quantity: int
-    ) -> tuple[int, float]:
+    ) -> int:
         query_cart = select(Cart).where(Cart.userId == user_id)
         result = await self.session.execute(query_cart)
         cart = result.scalar()

@@ -1,37 +1,22 @@
-version: "3.9"
-
 services:
-  postgres:
-    image: postgres:16
-    container_name: user_service_db
-    hostname: user-postgres
-    restart: always
-    env_file:
-      - .env
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: shop_db
+  frontend:
+    build:
+      context: ../general-login-front
+    container_name: user_service_frontend
     ports:
-      - "5432:5432"
+      - "5173:5173"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d shop_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - ../general-login-front:/app
+      - /app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
     networks:
       - shared_net
 
   api:
     build: .
     container_name: user_service_api
-    deploy:
-      resources:
-        limits:
-          memory: 5120M
-    restart: always
     ports:
       - "8000:8000"
     volumes:
@@ -43,39 +28,19 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_HOST: postgres
+      - POSTGRES_HOST=user_service_db
     depends_on:
       postgres:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head &&
              python src/app/main.py"
-    networks:
-      - shared_net
-
-  api-tests:
-    build: .
-    container_name: app_tests
-    environment:
-      - DATABASE_URL=${TEST_DATABASE_URL}
-      - SELLER_SERVICE_URL=${SELLER_SERVICE_URL}
-    depends_on:
-      - postgres
-    networks:
-      - shared_net
-    command: pytest tests/ --cov=src --cov-report=term-missing
-
-  frontend-auth:
-    build:
-      context: ../general-login-front
-    container_name: user_auth_frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - ../general-login-front:/app
-      - /app/node_modules
-    depends_on:
-      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/cart/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - shared_net
 
@@ -89,7 +54,44 @@ services:
       - ../user-frontend:/app
       - /app/node_modules
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    networks:
+      - shared_net
+
+  api-tests:
+    build: .
+    container_name: app_tests
+    environment:
+      - DATABASE_URL=${TEST_DATABASE_URL}
+      - SELLER_SERVICE_URL=${SELLER_SERVICE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pytest tests/ --cov=src --cov-report=term-missing
+    profiles:
+      - testing
+    networks:
+      - shared_net
+
+  postgres:
+    image: postgres:16
+    container_name: user_service_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - shared_net
 

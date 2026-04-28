@@ -10,7 +10,14 @@ from src.app.config import settings
 from src.core.exceptions import NotEnoughStockError, NotFoundError
 from src.repositories.cart_repository import CartRepository
 from src.repositories.order_repository import OrderRepository
-from src.schemas.order_schemas import CreateOrderRequestSchema
+from src.schemas.order_schemas import (
+    CreateOrderRequestSchema,
+    CreateOrderResponseSchema,
+    OrderDetailResponseSchema,
+    OrderHistoryItemSchema,
+    UserOrdersResponse,
+)
+from src.schemas.pagination_schemas import PaginationSchema
 
 SELLER_SERVICE_URL = settings.SELLER_SERVICE_URL
 
@@ -88,7 +95,7 @@ class OrderService:
 
     async def create_order_service(
         self, user_id: UUID, order_data: CreateOrderRequestSchema
-    ) -> dict:
+    ) -> CreateOrderResponseSchema:
         cart_items = await self.cart_repository.get_cart_items(user_id=user_id)
 
         if not cart_items:
@@ -154,38 +161,33 @@ class OrderService:
             cart_id=cart_id,
         )
 
-        return {"success": True, "orderId": str(order_id)}
+        return CreateOrderResponseSchema(orderId=order_id)
 
     async def get_user_orders_service(
         self, user_id: UUID, page: int, limit: int
-    ) -> dict:
+    ) -> UserOrdersResponse:
         offset = (page - 1) * limit
         orders, total_orders_cnt = await self.order_repository.get_user_orders(
             user_id=user_id, offset=offset, limit=limit
         )
         total_pages = math.ceil(total_orders_cnt / limit) if total_orders_cnt > 0 else 1
 
-        return {
-            "success": True,
-            "orders": [
-                {
-                    "orderId": str(order.orderId),
-                    "createdAt": order.createdAt,
-                    "status": order.status,
-                    "totalPrice": float(order.totalPrice),
-                    "totalItems": order.totalItems,
-                }
-                for order in orders
-            ],
-            "pagination": {
-                "page": page,
-                "limit": limit,
-                "totalItems": total_orders_cnt,
-                "totalPages": total_pages,
-            },
-        }
+        order_items = [OrderHistoryItemSchema.model_validate(order) for order in orders]
 
-    async def get_order_details_service(self, order_id: UUID, user_id: UUID) -> dict:
+        return UserOrdersResponse(
+            success=True,
+            orders=order_items,
+            pagination=PaginationSchema(
+                page=page,
+                limit=limit,
+                totalItems=total_orders_cnt,
+                totalPages=total_pages,
+            ),
+        )
+
+    async def get_order_details_service(
+        self, order_id: UUID, user_id: UUID
+    ) -> OrderDetailResponseSchema:
         order_details = await self.order_repository.get_order_details(
             order_id=order_id, user_id=user_id
         )
@@ -206,6 +208,7 @@ class OrderService:
             if market_id_str not in markets_dict:
                 markets_dict[market_id_str] = {
                     "marketId": order_market.marketId,
+                    "marketName": order_market.marketName,
                     "status": order_market.status,
                     "totalPrice": float(order_market.totalPrice),
                     "items": [],
@@ -220,12 +223,12 @@ class OrderService:
                 }
             )
 
-        return {
-            "orderId": first_order.orderId,
-            "createdAt": first_order.createdAt,
-            "status": first_order.status,
-            "totalPrice": float(first_order.totalPrice),
-            "deliveryAddress": first_order.deliveryAddress,
-            "deliveryCity": first_order.deliveryCity,
-            "markets": list(markets_dict.values()),
-        }
+        return OrderDetailResponseSchema(
+            orderId=first_order.orderId,
+            createdAt=first_order.createdAt,
+            status=first_order.status,
+            totalPrice=float(first_order.totalPrice),
+            deliveryAddress=first_order.deliveryAddress,
+            deliveryCity=first_order.deliveryCity,
+            markets=list(markets_dict.values()),
+        )
