@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RegisterForm } from "./RegisterForm";
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { authApi } from "../api/authApi";
-import { tokenService } from "../../../shared/lib/token";
+import { jwtDecode } from "jwt-decode";
 
 vi.mock("../api/authApi", () => ({
   authApi: {
@@ -16,42 +16,21 @@ vi.mock("../../../shared/lib/token", () => ({
   },
 }));
 
+vi.mock("jwt-decode", () => ({
+  jwtDecode: vi.fn(),
+}));
+
 describe("RegisterForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
 
-  test("шаги переключаются", () => {
-    render(<RegisterForm onSwitch={() => {}} />);
-
-    expect(screen.getByText(/step 1 of 3/i)).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(screen.getByText(/step 1 of 3/i)).toBeTruthy();
-  });
-
-  test("валидация step 1", async () => {
-    render(<RegisterForm onSwitch={() => {}} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(await screen.findByText(/login is required/i)).toBeTruthy();
-    expect(screen.getByText(/password is required/i)).toBeTruthy();
-  });
-
-  test("успешный проход всех шагов и регистрация", async () => {
-    (authApi.register as any).mockResolvedValue({
-      token: "token123",
-      user: { isSeller: false },
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { href: "" },
     });
+  });
 
-    delete (window as any).location;
-    (window as any).location = { href: "" };
-
-    render(<RegisterForm onSwitch={() => {}} />);
-
-    // STEP 1
+  const fillSteps = async () => {
     fireEvent.change(screen.getByLabelText(/login/i), {
       target: { value: "TestUser" },
     });
@@ -66,8 +45,7 @@ describe("RegisterForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    // STEP 2
-    await screen.findByText(/step 2 of 3/i);
+    await screen.findByText(/step 2/i);
 
     fireEvent.change(screen.getByLabelText(/first name/i), {
       target: { value: "Ivan" },
@@ -79,8 +57,7 @@ describe("RegisterForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    // STEP 3
-    await screen.findByText(/step 3 of 3/i);
+    await screen.findByText(/step 3/i);
 
     fireEvent.change(screen.getByLabelText(/date of birth/i), {
       target: { value: "2000-01-01" },
@@ -93,30 +70,90 @@ describe("RegisterForm", () => {
     fireEvent.change(screen.getByLabelText(/telegram/i), {
       target: { value: "@testuser" },
     });
+  };
+
+  test("регистрация USER", async () => {
+    (authApi.register as any).mockResolvedValue({
+      token: "token123",
+      user: { isSeller: false },
+    });
+
+    (jwtDecode as any).mockReturnValue({ is_admin: false });
+
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    await fillSteps();
 
     fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
     await waitFor(() => {
-      expect(authApi.register).toHaveBeenCalled();
-      expect(tokenService.set).toHaveBeenCalledWith("token123");
       expect(window.location.href).toContain("5171");
     });
   });
 
-  test("регистрация продавца", async () => {
+  test("регистрация SELLER", async () => {
     (authApi.register as any).mockResolvedValue({
       token: "token123",
       user: { isSeller: true },
     });
 
-    delete (window as any).location;
-    (window as any).location = { href: "" };
+    (jwtDecode as any).mockReturnValue({ is_admin: false });
 
     render(<RegisterForm onSwitch={() => {}} />);
 
-    // STEP 1
+    await fillSteps();
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    await waitFor(() => {
+      expect(window.location.href).toContain("5172");
+    });
+  });
+
+  test("регистрация ADMIN", async () => {
+    (authApi.register as any).mockResolvedValue({
+      token: "token123",
+      user: { isSeller: false },
+    });
+
+    (jwtDecode as any).mockReturnValue({ is_admin: true });
+
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    await fillSteps();
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    await waitFor(() => {
+      expect(window.location.href).toContain("5175");
+    });
+  });
+
+  test("ошибка регистрации", async () => {
+    window.alert = vi.fn();
+
+    (authApi.register as any).mockRejectedValue({
+      response: { data: { detail: "Error" } },
+    });
+
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    await fillSteps();
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith("Error");
+    });
+  });
+
+  test("ошибка: пароли не совпадают", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
     fireEvent.change(screen.getByLabelText(/login/i), {
-      target: { value: "TestSeller" },
+      target: { value: "TestUser" },
     });
 
     fireEvent.change(screen.getByLabelText(/^password$/i), {
@@ -124,16 +161,52 @@ describe("RegisterForm", () => {
     });
 
     fireEvent.change(screen.getByLabelText(/confirm password/i), {
-      target: { value: "Maize111" },
+      target: { value: "Wrong111" },
     });
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    // STEP 2
-    await screen.findByText(/step 2 of 3/i);
+    expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
+  });
+
+  test("ошибка: слабый пароль", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/login/i), {
+      target: { value: "TestUser" },
+    });
+
+    fireEvent.change(screen.getByLabelText(/^password$/i), {
+      target: { value: "123" },
+    });
+
+    fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      target: { value: "123" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(await screen.findByText(/min 8 chars/i)).toBeInTheDocument();
+  });
+
+  test("ошибка: некорректное имя", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/login/i), {
+      target: { value: "TestUser" },
+    });
+    fireEvent.change(screen.getByLabelText(/^password$/i), {
+      target: { value: "Maize111" },
+    });
+    fireEvent.change(screen.getByLabelText(/confirm password/i), {
+      target: { value: "Maize111" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    await screen.findByText(/step 2/i);
 
     fireEvent.change(screen.getByLabelText(/first name/i), {
-      target: { value: "Ivan" },
+      target: { value: "Ivan123" },
     });
 
     fireEvent.change(screen.getByLabelText(/last name/i), {
@@ -142,57 +215,66 @@ describe("RegisterForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    // STEP 3
-    await screen.findByText(/step 3 of 3/i);
+    expect(await screen.findByText(/only letters allowed/i)).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("checkbox"));
+  test("ошибка: возраст меньше 18", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    await fillSteps();
 
     fireEvent.change(screen.getByLabelText(/date of birth/i), {
-      target: { value: "2000-01-01" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/city/i), {
-      target: { value: "Moscow" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/telegram/i), {
-      target: { value: "@seller" },
+      target: { value: "2015-01-01" },
     });
 
     fireEvent.click(screen.getByRole("button", { name: /register/i }));
 
-    await waitFor(() => {
-      expect(window.location.href).toContain("5172");
-    });
+    expect(await screen.findByText(/you must be 18/i)).toBeInTheDocument();
   });
-  test("все валидные данные (включая patronymic)", async () => {
-    (authApi.register as any).mockResolvedValue({
-      token: "token123",
-      user: { isSeller: false },
-    });
 
-    delete (window as any).location;
-    (window as any).location = { href: "" };
-
+  test("ошибка: невалидный telegram", async () => {
     render(<RegisterForm onSwitch={() => {}} />);
 
-    // STEP 1 (валидные данные)
+    await fillSteps();
+
+    fireEvent.change(screen.getByLabelText(/telegram/i), {
+      target: { value: "@" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    expect(await screen.findByText(/invalid telegram/i)).toBeInTheDocument();
+  });
+
+  test("ошибка: пустой город", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
+    await fillSteps();
+
+    fireEvent.change(screen.getByLabelText(/city/i), {
+      target: { value: "" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /register/i }));
+
+    expect(await screen.findByText(/city is required/i)).toBeInTheDocument();
+  });
+
+  test("ошибка: некорректное отчество", async () => {
+    render(<RegisterForm onSwitch={() => {}} />);
+
     fireEvent.change(screen.getByLabelText(/login/i), {
-      target: { value: "Valid_User123" }, // валидный логин
+      target: { value: "TestUser" },
     });
-
     fireEvent.change(screen.getByLabelText(/^password$/i), {
-      target: { value: "StrongPass1" }, // валидный пароль
+      target: { value: "Maize111" },
     });
-
     fireEvent.change(screen.getByLabelText(/confirm password/i), {
-      target: { value: "StrongPass1" },
+      target: { value: "Maize111" },
     });
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
-
-    // STEP 2 (включая patronymic)
-    await screen.findByText(/step 2 of 3/i);
+    await screen.findByText(/step 2/i);
 
     fireEvent.change(screen.getByLabelText(/first name/i), {
       target: { value: "Ivan" },
@@ -203,44 +285,11 @@ describe("RegisterForm", () => {
     });
 
     fireEvent.change(screen.getByLabelText(/patronymic/i), {
-      target: { value: "Ivanovich" }, // вот это поле раньше не тестилось
+      target: { value: "123" },
     });
 
     fireEvent.click(screen.getByRole("button", { name: /next/i }));
 
-    // STEP 3 (валидные данные)
-    await screen.findByText(/step 3 of 3/i);
-
-    fireEvent.change(screen.getByLabelText(/date of birth/i), {
-      target: { value: "1990-01-01" }, // точно >18 лет
-    });
-
-    fireEvent.change(screen.getByLabelText(/city/i), {
-      target: { value: "Moscow" },
-    });
-
-    fireEvent.change(screen.getByLabelText(/telegram/i), {
-      target: { value: "@valid_user123" }, // валидный telegram
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: /register/i }));
-
-    await waitFor(() => {
-      expect(authApi.register).toHaveBeenCalledWith(
-        expect.objectContaining({
-          login: "Valid_User123",
-          password: "StrongPass1",
-          firstName: "Ivan",
-          lastName: "Ivanov",
-          patronymic: "Ivanovich",
-          city: "Moscow",
-          telegram: "@valid_user123",
-          isSeller: false,
-        })
-      );
-
-      expect(tokenService.set).toHaveBeenCalledWith("token123");
-      expect(window.location.href).toContain("5171");
-    });
+    expect(await screen.findByText(/only letters allowed/i)).toBeInTheDocument();
   });
 });

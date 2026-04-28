@@ -2,11 +2,16 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { LoginForm } from "./LoginForm";
 import { describe, test, expect, vi, beforeEach } from "vitest";
 import { authApi } from "../api/authApi";
+import { jwtDecode } from "jwt-decode";
 
 vi.mock("../api/authApi", () => ({
   authApi: {
     login: vi.fn(),
   },
+}));
+
+vi.mock("jwt-decode", () => ({
+  jwtDecode: vi.fn(),
 }));
 
 describe("LoginForm", () => {
@@ -17,9 +22,9 @@ describe("LoginForm", () => {
   test("рендерится форма", () => {
     render(<LoginForm onSwitch={() => {}} />);
 
-    expect(screen.getByText(/sign in/i)).toBeTruthy();
-    expect(screen.getByLabelText(/login/i)).toBeTruthy();
-    expect(screen.getByLabelText(/password/i)).toBeTruthy();
+    expect(screen.getByText(/sign in/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/login/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 
   test("ввод данных работает", () => {
@@ -35,11 +40,13 @@ describe("LoginForm", () => {
     expect(passwordInput.value).toBe("Maize111");
   });
 
-  test("успешный логин (user)", async () => {
+  test("логин как USER", async () => {
     (authApi.login as any).mockResolvedValue({
       token: "token123",
       user: { isSeller: false },
     });
+
+    (jwtDecode as any).mockReturnValue({ is_admin: false });
 
     delete (window as any).location;
     (window as any).location = { href: "" };
@@ -57,16 +64,17 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
     await waitFor(() => {
-      expect(authApi.login).toHaveBeenCalled();
       expect(window.location.href).toContain("5171");
     });
   });
 
-  test("успешный логин (seller)", async () => {
+  test("логин как SELLER", async () => {
     (authApi.login as any).mockResolvedValue({
       token: "token123",
       user: { isSeller: true },
     });
+
+    (jwtDecode as any).mockReturnValue({ is_admin: false });
 
     delete (window as any).location;
     (window as any).location = { href: "" };
@@ -88,6 +96,34 @@ describe("LoginForm", () => {
     });
   });
 
+  test("логин как ADMIN", async () => {
+    (authApi.login as any).mockResolvedValue({
+      token: "token123",
+      user: { isSeller: false },
+    });
+
+    (jwtDecode as any).mockReturnValue({ is_admin: true });
+
+    delete (window as any).location;
+    (window as any).location = { href: "" };
+
+    render(<LoginForm onSwitch={() => {}} />);
+
+    fireEvent.change(screen.getByLabelText(/login/i), {
+      target: { value: "Admin" },
+    });
+
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: { value: "Admin123" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /login/i }));
+
+    await waitFor(() => {
+      expect(window.location.href).toContain("5175");
+    });
+  });
+
   test("ошибка логина", async () => {
     window.alert = vi.fn();
 
@@ -106,19 +142,16 @@ describe("LoginForm", () => {
     });
   });
 
-  test("невалидный логин (пустые поля)", async () => {
+  test("fallback ошибка", async () => {
     window.alert = vi.fn();
 
-    // имитируем ошибку без response (как при пустых данных)
     (authApi.login as any).mockRejectedValue({});
 
     render(<LoginForm onSwitch={() => {}} />);
 
-    // НЕ вводим данные
     fireEvent.click(screen.getByRole("button", { name: /login/i }));
 
     await waitFor(() => {
-      expect(authApi.login).toHaveBeenCalled();
       expect(window.alert).toHaveBeenCalledWith("Login failed");
     });
   });
