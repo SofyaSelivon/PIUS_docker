@@ -59,4 +59,26 @@ describe("UsersList", () => {
 
     expect(onDelete).toHaveBeenCalledWith("1");
   });
+
+  test("рендерит fallback значения имени", () => {
+    const users = [
+      {
+        userId: "2",
+        login: "empty",
+        firstName: "",
+        lastName: "",
+        isSeller: false,
+      },
+    ];
+
+    render(
+      <UsersList
+        users={users as any}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
 });
