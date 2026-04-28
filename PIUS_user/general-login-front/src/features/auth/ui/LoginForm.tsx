@@ -2,9 +2,15 @@ import { useState } from "react";
 import { Button, TextField, Typography, Box } from "@mui/material";
 import styles from "./AuthForms.module.css";
 import { authApi } from "../api/authApi";
+import { jwtDecode } from "jwt-decode";
 
 interface Props {
   onSwitch: () => void;
+}
+
+interface JwtPayload {
+  sub: string;
+  is_admin: boolean;
 }
 
 export const LoginForm = ({ onSwitch }: Props) => {
@@ -12,19 +18,20 @@ export const LoginForm = ({ onSwitch }: Props) => {
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    if (login === "admin" && password === "admin") {
-      window.location.href = "http://localhost:5175";
-      return;
-    }
     try {
-      const data = await authApi.login({
-        login,
-        password,
-      });
+      const data = await authApi.login({ login, password });
 
-      const targetUrl = data.user.isSeller
-        ? "http://localhost:5172"
-        : "http://localhost:5171";
+      const decoded = jwtDecode<JwtPayload>(data.token);
+
+      let targetUrl = "";
+
+      if (decoded.is_admin) {
+        targetUrl = "http://localhost:5175";
+      } else if (data.user.isSeller) {
+        targetUrl = "http://localhost:5172";
+      } else {
+        targetUrl = "http://localhost:5171";
+      }
 
       window.location.href = `${targetUrl}?token=${data.token}`;
     } catch (e: any) {
