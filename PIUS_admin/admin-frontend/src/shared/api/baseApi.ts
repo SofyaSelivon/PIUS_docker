@@ -5,7 +5,7 @@ export const baseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:8004/api",
     credentials: "include",
-    
+
   prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
 

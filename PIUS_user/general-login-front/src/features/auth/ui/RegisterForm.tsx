@@ -165,7 +165,7 @@ export const RegisterForm = ({ onSwitch }: Props) => {
       tokenService.set(data.token);
 
       const decoded = jwtDecode<JwtPayload>(data.token);
-      
+
       let targetUrl = "";
 
       if (decoded.is_admin) {

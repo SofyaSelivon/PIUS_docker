@@ -14,17 +14,18 @@ repos:
         name: isort (python)
         args: ["--profile", "black"]
 
-  - repo: https://github.com/psf/black
-    rev: 24.2.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
     hooks:
-      - id: black
-        language_version: python3.12.9
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
 
   - repo: local
     hooks:
       - id: pytest-docker
         name: pytest-in-docker
-        entry: docker-compose exec -T api pytest tests/
+        entry: cmd /c "cd PIUS_user/USERBACK && docker compose exec -T api pytest tests/"
         language: system
         pass_filenames: false
         always_run: true
