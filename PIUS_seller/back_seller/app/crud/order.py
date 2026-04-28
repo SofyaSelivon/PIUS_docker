@@ -133,6 +133,7 @@ async def get_orders_with_stats(
         "pagination": {
             "page": page,
             "limit": limit,
+            "total": total_orders,
             "totalItems": total_orders,
             "totalPages": math.ceil(total_orders / limit) if limit else 1,
         },
