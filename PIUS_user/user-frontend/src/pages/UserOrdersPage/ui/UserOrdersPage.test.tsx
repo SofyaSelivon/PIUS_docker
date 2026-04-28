@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, test, expect, vi, beforeEach } from "vitest";
 import { UserOrdersPage } from "./UserOrdersPage";
-import { describe, test, expect, vi } from "vitest";
+
+const mockDetailsQuery = vi.fn();
+const mockOrdersQuery = vi.fn();
 
 const mockOrders = [
   {
@@ -21,10 +24,8 @@ const mockDetails = {
 };
 
 vi.mock("../../../entities/order/api/orderApi", () => ({
-  useGetOrdersQuery: () => ({
-    data: { orders: mockOrders },
-  }),
-  useGetOrderDetailsQuery: vi.fn(),
+  useGetOrdersQuery: () => mockOrdersQuery(),
+  useGetOrderDetailsQuery: (...args: any[]) => mockDetailsQuery(...args),
 }));
 
 vi.mock("../../../entities/order/ui/OrderCard", () => ({
@@ -34,27 +35,42 @@ vi.mock("../../../entities/order/ui/OrderCard", () => ({
 }));
 
 vi.mock("../../../features/order/ui/OrderDetailsModal", () => ({
-  OrderDetailsModal: ({ open }: any) =>
-    open ? <div>Modal Open</div> : null,
+  OrderDetailsModal: ({ open, onClose }: any) =>
+    open ? (
+      <div>
+        Modal Open
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
 }));
 
-import { useGetOrderDetailsQuery } from "../../../entities/order/api/orderApi";
-
 describe("UserOrdersPage", () => {
-  test("рендер заказов", () => {
-    (useGetOrderDetailsQuery as any).mockReturnValue({
-      data: null,
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockOrdersQuery.mockReturnValue({
+      data: { orders: mockOrders },
     });
 
+    mockDetailsQuery.mockReturnValue({
+      data: null,
+    });
+  });
+
+  test("рендер заказов", () => {
     render(<UserOrdersPage />);
 
     expect(screen.getByText(/Order 12345678abcd/i)).toBeInTheDocument();
   });
 
+  test("модалка закрыта по умолчанию", () => {
+    render(<UserOrdersPage />);
+
+    expect(screen.queryByText("Modal Open")).not.toBeInTheDocument();
+  });
+
   test("открытие модалки при клике", async () => {
-    (useGetOrderDetailsQuery as any).mockReturnValue({
-      data: mockDetails,
-    });
+    mockDetailsQuery.mockReturnValue({ data: mockDetails });
 
     render(<UserOrdersPage />);
 
@@ -63,5 +79,40 @@ describe("UserOrdersPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Modal Open")).toBeInTheDocument();
     });
+  });
+
+  test("закрытие модалки", async () => {
+    mockDetailsQuery.mockReturnValue({ data: mockDetails });
+
+    render(<UserOrdersPage />);
+
+    fireEvent.click(screen.getByText(/Order 12345678abcd/i));
+
+    await screen.findByText("Modal Open");
+
+    fireEvent.click(screen.getByText("Close"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Modal Open")).not.toBeInTheDocument();
+    });
+  });
+
+  test("нет заказов — ничего не рендерится", () => {
+    mockOrdersQuery.mockReturnValue({
+      data: undefined,
+    });
+
+    render(<UserOrdersPage />);
+
+    expect(screen.queryByText(/Order/i)).not.toBeInTheDocument();
+  });
+
+  test("details query вызывается с skip=true без selectedId", () => {
+    render(<UserOrdersPage />);
+
+    expect(mockDetailsQuery).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ skip: true })
+    );
   });
 });
