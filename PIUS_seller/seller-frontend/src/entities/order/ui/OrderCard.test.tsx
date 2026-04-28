@@ -75,4 +75,100 @@ describe("OrderCard", () => {
       "_blank"
     );
   });
+
+  test("shows alert when status update fails", async () => {
+    window.alert = vi.fn();
+
+    mockUpdate.mockImplementation(() => ({
+      unwrap: () =>
+        Promise.reject({
+          data: {
+            detail: "update failed",
+          },
+        }),
+    }));
+
+    render(<OrderCard order={order} />);
+
+    fireEvent.mouseDown(
+      screen.getByLabelText(/статус/i)
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("option")[0]
+    );
+
+    await waitFor(() => {
+      expect(window.alert)
+        .toHaveBeenCalledWith(
+          "update failed"
+        );
+    });
+  });
+
+  test("does not delete when confirm cancelled", () => {
+    mockDelete.mockClear();
+
+    window.confirm = vi.fn(() => false);
+
+    render(
+      <OrderCard order={order} />
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("button")[1]
+    );
+
+    expect(window.confirm)
+      .toHaveBeenCalled();
+
+    expect(mockDelete)
+      .not.toHaveBeenCalled();
+  });
+
+  test("shows alert on delete failure", async () => {
+    window.confirm = vi.fn(() => true);
+    window.alert = vi.fn();
+
+    mockDelete.mockImplementation(() => ({
+      unwrap: () => Promise.reject(),
+    }));
+
+    render(
+      <OrderCard order={order} />
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("button")[1]
+    );
+
+    await waitFor(() => {
+      expect(window.alert)
+        .toHaveBeenCalledWith(
+          "Ошибка удаления"
+        );
+    });
+  });
+
+  test("shows alert when telegram missing", () => {
+    window.alert = vi.fn();
+
+    render(
+      <OrderCard
+        order={{
+          ...order,
+          user: {},
+        }}
+      />
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("button")[0]
+    );
+
+    expect(window.alert)
+      .toHaveBeenCalledWith(
+        "Нет telegram"
+      );
+  });
 });
