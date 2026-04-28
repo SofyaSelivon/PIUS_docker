@@ -7,13 +7,6 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
@@ -21,11 +14,18 @@ repos:
         name: isort (python)
         args: ["--profile", "black"]
 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
   - repo: local
     hooks:
       - id: pytest-docker
         name: pytest-in-docker
-        entry: docker-compose exec -T api pytest tests/
+        entry: cmd /c "cd PIUS_user/USERBACK && docker compose exec -T api pytest tests/"
         language: system
         pass_filenames: false
         always_run: true
