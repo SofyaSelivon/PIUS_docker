@@ -59,21 +59,6 @@ services:
     networks:
       - shared_net
 
-  api-tests:
-    build: .
-    container_name: app_tests
-    environment:
-      - DATABASE_URL=${TEST_DATABASE_URL}
-      - SELLER_SERVICE_URL=${SELLER_SERVICE_URL}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: pytest tests/ --cov=src --cov-report=term-missing
-    profiles:
-      - testing
-    networks:
-      - shared_net
-
   postgres:
     image: postgres:16
     container_name: user_service_db

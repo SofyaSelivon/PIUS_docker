@@ -22,7 +22,6 @@ class OrderItemDetailSchema(BaseModel):
 
 class OrderMarketDetailItemSchema(BaseModel):
     marketId: UUID
-    marketName: str
     status: str
     totalPrice: float
     items: list[OrderItemDetailSchema]

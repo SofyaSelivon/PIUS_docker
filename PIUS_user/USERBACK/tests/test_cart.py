@@ -11,15 +11,18 @@ TEST_MARKET_ID = str(uuid4())
 SELLER_SERVICE_URL = settings.SELLER_SERVICE_URL
 
 
-MOCK_SELLER_PRODUCTS: list = [
+MOCK_SELLER_PRODUCTS = [
     {
         "id": TEST_PRODUCT_ID,
         "name": "Игровая приставка",
         "price": 75000.0,
         "available": 50,
         "marketId": TEST_MARKET_ID,
+        "category": "Electronics",
+        "img": "console.jpg",
     }
 ]
+
 
 MOCK_SELLER_RESPONSE = [
     {
@@ -28,7 +31,9 @@ MOCK_SELLER_RESPONSE = [
         "price": 100000.50,
         "available": 10,
         "img": "test.jpg",
-        "market": {"marketId": str(uuid4()), "marketName": "Apple Store"},
+        "marketId": TEST_MARKET_ID,
+        "category": "Smartphones",
+        "description": "Топ за свои деньги",
     }
 ]
 

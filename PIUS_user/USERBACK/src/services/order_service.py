@@ -203,7 +203,6 @@ class OrderService:
             if market_id_str not in markets_dict:
                 markets_dict[market_id_str] = {
                     "marketId": order_market.marketId,
-                    "marketName": order_market.marketName,
                     "status": order_market.status,
                     "totalPrice": float(order_market.totalPrice),
                     "items": [],

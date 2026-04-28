@@ -16,8 +16,11 @@ MOCK_SELLER_PRODUCTS = [
         "price": 75000.0,
         "available": 50,
         "marketId": TEST_MARKET_ID,
+        "category": "Electronics",
+        "description": "Супер консоль",
     }
 ]
+
 
 ORDER_PAYLOAD = settings.ORDER_PAYLOAD
 
