@@ -188,7 +188,7 @@ pytest
 ```
 #### Frontend
 ```
-yarn test
+yarn test:coverage
 ```
 
 # Контакты и поддержка
