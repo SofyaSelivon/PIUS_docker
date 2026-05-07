@@ -150,3 +150,6 @@ async def soft_delete_order(db: AsyncSession, order: Order) -> bool:
     order.deletedAt = func.now()
     await db.commit()
     return True
+
+
+# hook
